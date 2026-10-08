@@ -1,0 +1,57 @@
+ .reset-modal-backdrop {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.reset-modal-panel {
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #8da4ad transparent;
+}
+
+.reset-modal-form {
+  min-width: 0;
+}
+
+@media (max-height: 820px) {
+  .reset-modal-panel {
+    padding: 20px;
+  }
+
+  .reset-modal-panel .mb-5 {
+    margin-bottom: 12px;
+  }
+
+  .reset-modal-panel .reset-modal-form {
+    gap: 11px;
+  }
+
+  .reset-modal-panel .reset-modal-form > * {
+    margin-top: 0;
+  }
+
+  .reset-modal-panel .reset-modal-form input,
+  .reset-modal-panel .reset-modal-form button {
+    min-height: 42px;
+    height: 42px;
+  }
+}
+
+@media (max-width: 520px) {
+  .reset-modal-backdrop {
+    align-items: flex-start;
+    padding: 10px;
+  }
+
+  .reset-modal-panel {
+    max-height: calc(100dvh - 20px);
+    border-radius: 18px;
+    padding: 16px;
+  }
+
+  .reset-modal-panel h2 {
+    font-size: 1.35rem;
+  }
+}

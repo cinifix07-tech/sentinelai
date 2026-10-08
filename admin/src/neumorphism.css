@@ -1,0 +1,565 @@
+/* One surface system for the active admin app and its login screen. */
+.neo-admin {
+  --neo-base: #e9eef1;
+  --neo-face: #edf2f4;
+  --neo-low: #e5ecef;
+  --neo-high: #f3f6f8;
+  --neo-shade: #c8d2d9;
+  --neo-light: #ffffff;
+  --neo-ink: #213644;
+  --neo-muted: #536872;
+  --neo-accent: #00665e;
+  --neo-edge: #ffffff80;
+  --neo-raised: 9px 9px 22px var(--neo-shade), -9px -9px 22px var(--neo-light);
+  --neo-small: 4px 4px 10px var(--neo-shade), -4px -4px 10px var(--neo-light);
+  --neo-inset: inset 4px 4px 9px var(--neo-shade), inset -4px -4px 9px var(--neo-light);
+  --color-surface: var(--neo-base);
+  --color-surface-container-lowest: var(--neo-face);
+  --color-surface-container-low: var(--neo-low);
+  --color-surface-container: var(--neo-low);
+  --color-surface-container-high: var(--neo-high);
+  --color-surface-container-highest: var(--neo-high);
+  --color-on-surface: var(--neo-ink);
+  --color-on-surface-variant: var(--neo-muted);
+  background: var(--neo-base);
+  color: var(--neo-ink);
+  color-scheme: light;
+}
+
+.neo-admin.theme-sage {
+  --neo-base: #e6eee7;
+  --neo-face: #ebf1eb;
+  --neo-low: #e0e9e1;
+  --neo-high: #f0f5f0;
+  --neo-shade: #c4d1c6;
+  --neo-light: #fcfffc;
+  --neo-ink: #253d31;
+  --neo-muted: #526b5b;
+}
+
+.neo-admin.theme-twilight {
+  --neo-base: #283541;
+  --neo-face: #2d3b48;
+  --neo-low: #263440;
+  --neo-high: #344552;
+  --neo-shade: #1d2731;
+  --neo-light: #364754;
+  --neo-ink: #e8eff3;
+  --neo-muted: #b7c9d2;
+  --neo-accent: #8bdbcd;
+  --neo-edge: #ffffff0c;
+  color-scheme: dark;
+}
+
+.neo-admin.theme-midnight {
+  --neo-base: #1c252e;
+  --neo-face: #222d37;
+  --neo-low: #1b252f;
+  --neo-high: #2b3845;
+  --neo-shade: #121a22;
+  --neo-light: #2a3642;
+  --neo-ink: #e7eef5;
+  --neo-muted: #b0c2d0;
+  --neo-accent: #8bdbcd;
+  --neo-edge: #ffffff09;
+  color-scheme: dark;
+}
+
+/* Major cards rise from the canvas. Nested readings sit within it. */
+.neo-admin :is(section, article, div).bg-surface-container-lowest {
+  background: linear-gradient(135deg, var(--neo-high), var(--neo-face));
+  border: 1px solid var(--neo-edge);
+  border-radius: 22px;
+  box-shadow: var(--neo-raised);
+}
+
+.neo-admin :is(section, article).bg-surface-container-lowest {
+  padding: clamp(20px, 2vw, 28px);
+}
+
+.neo-admin :is(div, section).bg-surface-container-low,
+.neo-admin :is(div, section).bg-surface-container {
+  background-color: var(--neo-low);
+  border-color: transparent;
+  box-shadow: inset 2px 2px 5px var(--neo-shade), inset -2px -2px 5px var(--neo-light);
+}
+
+.neo-admin .bg-white {
+  background-color: var(--neo-face);
+  color: var(--neo-ink);
+}
+
+.neo-admin div.bg-white:is(.shadow-xl, .shadow-2xl) {
+  border: 1px solid var(--neo-edge);
+  border-radius: 24px;
+  box-shadow: 18px 25px 65px #0a192940, inset 1px 1px 0 var(--neo-light);
+}
+
+.neo-admin > header {
+  background: color-mix(in srgb, var(--neo-base) 94%, transparent);
+  border-bottom: 1px solid var(--neo-edge);
+  box-shadow: 0 7px 22px color-mix(in srgb, var(--neo-shade) 55%, transparent);
+}
+
+.neo-admin header nav {
+  background: var(--neo-base);
+  border-color: transparent;
+  box-shadow: var(--neo-inset);
+  padding: 7px;
+}
+
+.neo-admin header nav button { min-height: 36px; }
+.neo-admin header nav button[aria-current='page'] {
+  background: linear-gradient(145deg, #08786e, #005b54);
+  color: #fff;
+  box-shadow: 3px 3px 7px var(--neo-shade), inset 1px 1px 0 #ffffff29;
+}
+
+.neo-admin > nav {
+  background: color-mix(in srgb, var(--neo-base) 96%, transparent);
+  border-color: var(--neo-edge);
+  box-shadow: 0 -5px 20px color-mix(in srgb, var(--neo-shade) 60%, transparent);
+  padding-block: 8px max(8px, env(safe-area-inset-bottom));
+}
+
+.neo-admin > nav button { border-radius: 15px; min-width: 64px; }
+.neo-admin > nav button[aria-current='page'] {
+  background: var(--neo-base);
+  color: var(--neo-accent);
+  box-shadow: var(--neo-inset);
+  transform: none;
+}
+
+.neo-admin button {
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.neo-admin button:is(.bg-surface-container, .bg-surface-container-low, .bg-surface-container-high, .bg-white) {
+  background: linear-gradient(135deg, var(--neo-high), var(--neo-base));
+  border: 1px solid var(--neo-edge);
+  box-shadow: var(--neo-small);
+  color: var(--neo-ink);
+}
+
+/* Keep dashboard controls integrated with the canvas instead of bright white tiles. */
+.neo-admin:not(.neo-login) button:is(.bg-surface-container, .bg-surface-container-low, .bg-surface-container-high, .bg-white) {
+  background: linear-gradient(135deg, var(--neo-low), var(--neo-base));
+}
+
+.neo-admin button:is(.bg-primary, .bg-primary-container) {
+  background: linear-gradient(145deg, #08786e, #005b54);
+  color: white;
+  border: 1px solid #ffffff15;
+  box-shadow: 4px 5px 11px var(--neo-shade), inset 1px 1px 0 #ffffff25;
+}
+
+.neo-admin button:not(:disabled):active { transform: translateY(1px); }
+.neo-admin button:is(.bg-surface-container, .bg-surface-container-low, .bg-white):not(:disabled):active {
+  box-shadow: var(--neo-inset);
+}
+
+/* Inline login controls should sit inside the field and not become white cards. */
+.neo-login form .relative.flex.items-center > button,
+.neo-login form > .flex.items-center.justify-between > button {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.neo-admin :is(input:not([type='checkbox']):not([type='radio']):not([type='range']), select, textarea) {
+  background: var(--neo-base);
+  color: var(--neo-ink);
+  border: 1px solid color-mix(in srgb, var(--neo-shade) 65%, transparent);
+  border-radius: 12px;
+  box-shadow: var(--neo-inset);
+  min-height: 44px;
+}
+
+.neo-admin input::placeholder, .neo-admin textarea::placeholder { color: var(--neo-muted); opacity: .8; }
+.neo-admin input:is([type='checkbox'], [type='radio'], [type='range']) { accent-color: #08786e; }
+.neo-admin :is(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--neo-accent);
+  outline-offset: 4px;
+}
+
+/* Existing literal text utilities also follow the selected atmosphere. */
+.neo-admin [class~='text-[#0b1c30]'] { color: var(--neo-ink); }
+.neo-admin [class~='text-[#3e4947]'] { color: var(--neo-muted); }
+.neo-admin .text-primary { color: var(--neo-accent); }
+.neo-admin :is(.bg-primary-fixed, .bg-primary-fixed-dim, .bg-primary-container) .text-primary { color: #005c55; }
+.neo-admin :is(.bg-primary-fixed, .bg-primary-fixed-dim).text-primary { color: #005c55; }
+.neo-admin :is(h1, h2, h3) { letter-spacing: -.025em; }
+.neo-admin main > .gap-5 { gap: 28px; }
+.neo-admin main .grid.gap-5 { gap: 26px; }
+.neo-admin main .flex-col.gap-4 { gap: 24px; }
+.neo-admin > footer { background: var(--neo-low); color: var(--neo-muted); }
+
+.neo-login main { padding-block: 52px; }
+.neo-login form button[type='submit'] {
+  min-height: 48px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #128477, #005c55);
+  box-shadow: 5px 6px 13px var(--neo-shade), inset 1px 1px 0 #ffffff30;
+}
+
+/* Remove bright inherited tiles from every non-primary dashboard control, including icon buttons. */
+.neo-admin:not(.neo-login) button:not([class*='bg-primary']):not([class*='bg-error']):not([class*='bg-red']):not([class*='bg-gradient']):not([class*='from-secondary']) {
+  background: linear-gradient(135deg, var(--neo-low), var(--neo-base)) !important;
+  color: var(--neo-ink);
+  border-color: var(--neo-edge);
+  box-shadow: var(--neo-small);
+}
+
+.neo-admin:not(.neo-login) button[class*='bg-red-'],
+.neo-admin:not(.neo-login) button[class*='bg-error-container'] {
+  background: linear-gradient(145deg, #f2c9c5, #dca29d) !important;
+  color: #7c2927 !important;
+  border: 1px solid #fff8 !important;
+  box-shadow: 5px 6px 13px #b98986, -4px -4px 11px var(--neo-light), inset 1px 1px 0 #fff9 !important;
+}
+
+.neo-admin:not(.neo-login) button[class*='bg-red-']:hover:not(:disabled),
+.neo-admin:not(.neo-login) button[class*='bg-error-container']:hover:not(:disabled) {
+  background: linear-gradient(145deg, #eab7b2, #d2918c) !important;
+}
+
+@media (min-width: 1024px) {
+  .neo-admin:not(.neo-login) > main { padding-top: 112px; }
+  .neo-admin:not(.neo-login) > nav { display: none; }
+}
+
+@media (max-width: 639px) {
+  .neo-admin { --neo-raised: 5px 5px 13px var(--neo-shade), -5px -5px 13px var(--neo-light); }
+  .neo-admin :is(section, article).bg-surface-container-lowest { border-radius: 18px; padding: 18px; }
+  .neo-admin main .grid.gap-5 { gap: 22px; }
+  .neo-login main { padding-block: 28px; }
+  .neo-admin > nav button { min-width: 54px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .neo-admin *, .neo-admin *::before, .neo-admin *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Premium desktop rail: the mobile BottomNav remains the compact mobile pattern. */
+@media (min-width: 1024px) {
+  .neo-admin:not(.neo-login) .admin-sidebar-shell {
+    width: 248px;
+    height: 100vh;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: color-mix(in srgb, var(--neo-face) 96%, transparent);
+    border-right: 1px solid var(--neo-edge);
+    border-bottom: 0;
+    box-shadow: 12px 0 34px color-mix(in srgb, var(--neo-shade) 32%, transparent);
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-inner {
+    width: 100%;
+    height: 100vh !important;
+    max-width: none;
+    padding: 28px 18px 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-brand {
+    min-height: 58px;
+    padding: 0 10px 22px;
+    gap: 11px;
+    border-bottom: 1px solid var(--neo-edge);
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-brand img {
+    width: 38px;
+    height: 38px;
+    filter: drop-shadow(0 5px 10px color-mix(in srgb, var(--neo-accent) 22%, transparent));
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-brand span {
+    color: var(--neo-ink) !important;
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-brand span span {
+    color: var(--neo-accent) !important;
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-brand > div > span:last-child {
+    display: block;
+    margin-top: 5px;
+    color: var(--neo-muted) !important;
+    font-size: 9px;
+    letter-spacing: .12em;
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-nav {
+    display: flex !important;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin: 26px 0 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-nav::before {
+    content: 'WORKSPACE';
+    padding: 0 12px 8px;
+    color: var(--neo-muted);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .2em;
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-nav button {
+    min-height: 48px;
+    justify-content: flex-start;
+    gap: 13px;
+    padding: 0 13px;
+    border: 1px solid transparent;
+    border-radius: 13px;
+    color: var(--neo-muted);
+    background: transparent;
+    box-shadow: none;
+    font-size: 12px;
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-nav button:hover {
+    color: var(--neo-ink);
+    background: color-mix(in srgb, var(--neo-high) 72%, transparent);
+    border-color: var(--neo-edge);
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-nav button[aria-current='page'] {
+    color: var(--neo-accent);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--neo-accent) 15%, transparent), color-mix(in srgb, var(--neo-accent) 5%, transparent));
+    border-color: color-mix(in srgb, var(--neo-accent) 35%, transparent);
+    box-shadow: inset 3px 0 0 var(--neo-accent), 0 8px 18px color-mix(in srgb, var(--neo-shade) 20%, transparent);
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-nav button .material-symbols-outlined {
+    width: 21px;
+    text-align: center;
+    font-size: 21px;
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: auto;
+    padding: 17px 4px 0;
+    border-top: 1px solid var(--neo-edge);
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-actions .admin-theme-picker {
+    display: block !important;
+    position: relative;
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-actions .admin-theme-picker > button {
+    width: 66px !important;
+    height: 58px !important;
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    color: var(--neo-ink) !important;
+    cursor: pointer;
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-actions .admin-color-label {
+    display: block !important;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .12em;
+    line-height: 1;
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-actions .admin-theme-menu {
+    position: fixed !important;
+    z-index: 100;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    width: min(320px, calc(100vw - 32px));
+    margin: 0 !important;
+    padding: 14px !important;
+    transform: translate(-50%, -50%);
+    border: 1px solid color-mix(in srgb, var(--neo-accent) 28%, var(--neo-edge));
+    border-radius: 22px;
+    background: color-mix(in srgb, var(--neo-face) 97%, transparent);
+    box-shadow: 0 30px 90px rgba(8, 20, 26, .38), var(--neo-raised);
+    pointer-events: auto;
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-actions .admin-theme-menu::before {
+    content: 'COLOR / BACKGROUND ATMOSPHERE';
+    display: block;
+    padding: 4px 8px 12px;
+    color: var(--neo-muted);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .13em;
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-actions > button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-actions > button[aria-label='User Profile'] {
+    margin-left: auto;
+  }
+
+  .neo-admin:not(.neo-login) .admin-sidebar-actions > button:last-child {
+    margin-left: 0;
+  }
+
+  .neo-admin:not(.neo-login) > main {
+    width: calc(100% - 248px);
+    max-width: none;
+    margin-left: 248px;
+    padding-top: 42px;
+    padding-right: 32px;
+    padding-left: 32px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .neo-admin:not(.neo-login) .admin-sidebar-shell { position: fixed; }
+}
+
+/* Communication modal uses the active admin surface tokens, not the legacy portal tokens. */
+.neo-admin:not(.neo-login) .communication-modal-backdrop {
+  background: color-mix(in srgb, var(--neo-shade) 58%, transparent);
+  backdrop-filter: blur(10px);
+}
+.neo-admin:not(.neo-login) .communication-modal {
+  color: var(--neo-ink);
+  background: var(--neo-face);
+  border-color: var(--neo-edge);
+  box-shadow: 0 30px 90px color-mix(in srgb, var(--neo-shade) 65%, transparent), inset 1px 1px 0 var(--neo-light);
+}
+.neo-admin:not(.neo-login) .communication-modal-header {
+  border-color: var(--neo-edge);
+  background: linear-gradient(135deg, var(--neo-high), var(--neo-face));
+}
+.neo-admin:not(.neo-login) .communication-modal-header h2,
+.neo-admin:not(.neo-login) .communication-person-copy strong,
+.neo-admin:not(.neo-login) .communication-presence-heading strong { color: var(--neo-ink); }
+.neo-admin:not(.neo-login) .communication-modal-header p,
+.neo-admin:not(.neo-login) .communication-person-copy small,
+.neo-admin:not(.neo-login) .communication-count,
+.neo-admin:not(.neo-login) .communication-modal-footer,
+.neo-admin:not(.neo-login) .communication-empty { color: var(--neo-muted); }
+.neo-admin:not(.neo-login) .communication-modal-people { padding: 14px 18px 10px; border-bottom: 1px solid var(--neo-edge); }
+.neo-admin:not(.neo-login) .communication-modal-people-list { display: flex; gap: 8px; overflow-x: auto; padding-top: 9px; }
+.neo-admin:not(.neo-login) .communication-modal-people-list button { display: flex; align-items: center; gap: 8px; min-width: 205px; padding: 9px; border: 1px solid transparent; border-radius: 13px; color: var(--neo-ink); background: var(--neo-low); text-align: left; cursor: pointer; }
+.neo-admin:not(.neo-login) .communication-modal-people-list button.active { border-color: var(--neo-accent); background: var(--neo-high); box-shadow: var(--neo-inset); }
+.neo-admin:not(.neo-login) .communication-modal-people-list button > span:last-child { display: grid; min-width: 0; gap: 2px; }
+.neo-admin:not(.neo-login) .communication-modal-people-list strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.neo-admin:not(.neo-login) .communication-modal-people-list small { color: var(--neo-muted); font-size: 9px; }
+.neo-admin:not(.neo-login) .communication-thread { background: linear-gradient(180deg, var(--neo-low), var(--neo-face)); }
+.neo-admin:not(.neo-login) .communication-bubble span { color: var(--neo-ink); background: var(--neo-high); box-shadow: var(--neo-small); }
+.neo-admin:not(.neo-login) .communication-bubble.outgoing span { color: #fff; background: linear-gradient(145deg, #08786e, #005b54); }
+.neo-admin:not(.neo-login) .communication-composer { border-color: var(--neo-edge); background: var(--neo-face); }
+.neo-admin:not(.neo-login) .communication-composer input { color: var(--neo-ink); background: var(--neo-base); border-color: var(--neo-edge); box-shadow: var(--neo-inset); }
+.neo-admin:not(.neo-login) .communication-composer button { color: #fff; background: linear-gradient(145deg, #08786e, #005b54); }
+.neo-admin:not(.neo-login) .communication-composer { align-items: center; }
+.neo-admin:not(.neo-login) .communication-attach-button { display: grid; place-items: center; flex: 0 0 auto; width: 38px; height: 38px; border: 1px solid var(--neo-edge); border-radius: 11px; color: var(--neo-accent); background: var(--neo-high); box-shadow: var(--neo-small); cursor: pointer; }
+.neo-admin:not(.neo-login) .communication-attach-button:hover { border-color: var(--neo-accent); transform: translateY(-1px); }
+.neo-admin:not(.neo-login) .communication-attach-button input { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
+.neo-admin:not(.neo-login) .communication-composer-main { display: grid; flex: 1; min-width: 0; gap: 5px; }
+.neo-admin:not(.neo-login) .communication-attachment-chip { display: flex; align-items: center; gap: 5px; min-width: 0; max-width: 100%; padding: 4px 7px; border-radius: 8px; color: var(--neo-accent); background: var(--neo-high); font-size: 10px; }
+.neo-admin:not(.neo-login) .communication-attachment-chip > span:nth-child(1) { font-size: 15px; }
+.neo-admin:not(.neo-login) .communication-attachment-chip { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.neo-admin:not(.neo-login) .communication-attachment-chip button { display: grid; place-items: center; width: 19px; height: 19px; margin-left: auto; padding: 0; border: 0; border-radius: 6px; color: var(--neo-muted); background: transparent; cursor: pointer; }
+.neo-admin:not(.neo-login) .communication-attachment-chip button:hover { color: #a83b36; background: var(--neo-face); }
+.neo-admin:not(.neo-login) .communication-bubble .communication-attachment-image { display: block; width: min(280px, 100%); max-height: 220px; margin-top: 7px; border-radius: 10px; object-fit: cover; }
+.neo-admin:not(.neo-login) .communication-bubble .communication-attachment-media { display: block; width: min(300px, 100%); max-height: 220px; margin-top: 7px; border-radius: 10px; }
+.neo-admin:not(.neo-login) .communication-bubble .communication-attachment-audio { display: block; width: min(280px, 100%); margin-top: 7px; }
+.neo-admin:not(.neo-login) .communication-attachment-file { display: inline-flex; align-items: center; gap: 6px; max-width: 280px; margin-top: 7px; padding: 7px 9px; border-radius: 9px; color: var(--neo-accent); background: var(--neo-low); font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.neo-admin:not(.neo-login) .communication-attachment-file:hover { background: var(--neo-high); }
+.neo-admin:not(.neo-login) .communication-close { color: var(--neo-muted); background: var(--neo-high); border-color: var(--neo-edge); box-shadow: var(--neo-small); }
+.neo-admin:not(.neo-login) .communication-avatar { color: var(--neo-accent); background: var(--neo-high); }
+.neo-admin:not(.neo-login) .communication-avatar i { border-color: var(--neo-face); }
+.neo-admin:not(.neo-login) .communication-person { color: var(--neo-ink); background: var(--neo-high); }
+.neo-admin:not(.neo-login) .communication-person:hover:not(:disabled) { border-color: var(--neo-accent); }
+.neo-admin:not(.neo-login) .communication-presence-panel { border-color: var(--neo-edge); background: var(--neo-low); }
+.neo-admin:not(.neo-login) .communication-filters button { color: var(--neo-muted); background: var(--neo-face); border-color: var(--neo-edge); }
+.neo-admin:not(.neo-login) .communication-filters button[aria-selected='true'] { color: var(--neo-accent); background: var(--neo-high); border-color: var(--neo-accent); }
+.neo-admin:not(.neo-login) .communication-error { color: #a83b36; }
+.neo-admin:not(.neo-login) .communication-presence-heading { margin-bottom: 15px; }
+.neo-admin:not(.neo-login) .communication-create-group { margin-top: 0; margin-bottom: 16px; }
+.neo-admin:not(.neo-login) .communication-filters { margin-bottom: 15px; }
+.neo-admin:not(.neo-login) .ai-floating-launcher { position: fixed; right: 24px; bottom: 24px; z-index: 45; display: inline-flex; align-items: center; gap: 8px; min-height: 54px; padding: 0 17px 0 13px; border: 1px solid color-mix(in srgb, var(--neo-accent) 70%, white); border-radius: 18px; color: #fff; background: linear-gradient(145deg, #08786e, #005b54); box-shadow: 0 16px 32px color-mix(in srgb, var(--neo-shade) 28%, transparent), inset 1px 1px 0 #ffffff55; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease; }
+.neo-admin:not(.neo-login) .ai-floating-launcher:hover { transform: translateY(-3px); box-shadow: 0 21px 38px color-mix(in srgb, var(--neo-shade) 34%, transparent), inset 1px 1px 0 #ffffff55; }
+.neo-admin:not(.neo-login) .ai-floating-launcher .material-symbols-outlined { font-size: 25px; }
+.neo-admin:not(.neo-login) .ai-floating-launcher-label { font-size: 11px; font-weight: 800; }
+.neo-admin:not(.neo-login) .ai-floating-launcher-pulse { width: 8px; height: 8px; border-radius: 50%; background: #94f3e8; box-shadow: 0 0 0 5px #94f3e822; }
+.neo-admin:not(.neo-login) .ai-chat-modal-backdrop { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 20px; background: color-mix(in srgb, var(--neo-shade) 62%, transparent); backdrop-filter: blur(11px); }
+.neo-admin:not(.neo-login) .ai-chat-modal { width: min(100%, 760px); max-height: min(720px, calc(100vh - 40px)); color: var(--neo-ink); background: var(--neo-face); border-color: var(--neo-edge); box-shadow: 0 30px 90px color-mix(in srgb, var(--neo-shade) 65%, transparent), inset 1px 1px 0 var(--neo-light); }
+.neo-admin:not(.neo-login) .ai-chat-modal-close { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--neo-edge); border-radius: 9px; color: var(--neo-muted); background: var(--neo-high); cursor: pointer; }
+.neo-admin:not(.neo-login) .ai-chat-modal-close:hover { color: var(--neo-accent); border-color: var(--neo-accent); }
+.neo-admin:not(.neo-login) .ai-chat-modal .max-h-\[520px\] { min-height: 230px; }
+@media (max-width: 640px) {
+  .neo-admin:not(.neo-login) .ai-floating-launcher { right: 16px; bottom: 78px; min-height: 50px; padding-right: 13px; }
+  .neo-admin:not(.neo-login) .ai-floating-launcher-label { display: none; }
+  .neo-admin:not(.neo-login) .ai-chat-modal-backdrop { padding: 10px; }
+  .neo-admin:not(.neo-login) .ai-chat-modal { max-height: calc(100vh - 20px); border-radius: 18px; }
+}
+.neo-admin:not(.neo-login) .communication-create-group { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 0; margin-bottom: 16px; padding: 11px 12px; border: 1px dashed color-mix(in srgb, var(--neo-accent) 45%, var(--neo-edge)); border-radius: 13px; color: var(--neo-accent); background: transparent; text-align: left; cursor: pointer; }
+.neo-admin:not(.neo-login) .communication-create-group:hover { background: var(--neo-high); }
+.neo-admin:not(.neo-login) .communication-create-group > span:nth-child(2) { display: grid; flex: 1; gap: 2px; }
+.neo-admin:not(.neo-login) .communication-create-group strong { color: var(--neo-ink); font-size: 11px; }
+.neo-admin:not(.neo-login) .communication-create-group small { color: var(--neo-muted); font-size: 9px; }
+.neo-admin:not(.neo-login) .communication-group-modal { width: min(100%, 560px); max-height: min(720px, calc(100vh - 40px)); overflow: auto; border: 1px solid var(--neo-edge); border-radius: 24px; color: var(--neo-ink); background: var(--neo-face); box-shadow: 0 30px 90px color-mix(in srgb, var(--neo-shade) 65%, transparent), inset 1px 1px 0 var(--neo-light); }
+.neo-admin:not(.neo-login) .communication-group-icon { display: grid; place-items: center; flex: 0 0 auto; width: 44px; height: 44px; border-radius: 14px; color: var(--neo-accent); background: var(--neo-high); box-shadow: var(--neo-small); }
+.neo-admin:not(.neo-login) .communication-group-form { display: grid; gap: 16px; padding: 18px 20px 20px; }
+.neo-admin:not(.neo-login) .communication-group-form > label { display: grid; gap: 7px; color: var(--neo-muted); font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.neo-admin:not(.neo-login) .communication-group-form > label input { width: 100%; padding: 11px 13px; color: var(--neo-ink); background: var(--neo-base); border: 1px solid var(--neo-edge); border-radius: 12px; box-shadow: var(--neo-inset); font-size: 12px; letter-spacing: normal; text-transform: none; }
+.neo-admin:not(.neo-login) .communication-group-members { display: grid; gap: 8px; }
+.neo-admin:not(.neo-login) .communication-member-option { display: flex; align-items: center; gap: 9px; padding: 9px; border: 1px solid var(--neo-edge); border-radius: 12px; color: var(--neo-ink); background: var(--neo-low); cursor: pointer; }
+.neo-admin:not(.neo-login) .communication-member-option.selected { border-color: var(--neo-accent); background: var(--neo-high); box-shadow: var(--neo-inset); }
+.neo-admin:not(.neo-login) .communication-member-option input { position: absolute; opacity: 0; pointer-events: none; }
+.neo-admin:not(.neo-login) .communication-member-option > span:nth-child(3) { display: grid; flex: 1; gap: 2px; min-width: 0; }
+.neo-admin:not(.neo-login) .communication-member-option strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.neo-admin:not(.neo-login) .communication-member-option small { color: var(--neo-muted); font-size: 9px; }
+.neo-admin:not(.neo-login) .communication-member-option > .material-symbols-outlined { color: var(--neo-accent); font-size: 19px; }
+.neo-admin:not(.neo-login) .communication-group-actions { display: flex; justify-content: flex-end; gap: 9px; padding-top: 3px; }
+.neo-admin:not(.neo-login) .communication-group-actions button { min-height: 40px; padding: 0 16px; border-radius: 11px; font-size: 11px; font-weight: 700; cursor: pointer; }
+.neo-admin:not(.neo-login) .communication-secondary { color: var(--neo-muted); background: var(--neo-low); border: 1px solid var(--neo-edge); }
+.neo-admin:not(.neo-login) .communication-primary { color: #fff; background: linear-gradient(145deg, #08786e, #005b54); border: 1px solid #ffffff18; }
+.neo-admin:not(.neo-login) .admin-notification-row { position: relative; padding-right: 26px; border-radius: 12px; cursor: pointer; transition: background .16s ease; }
+.neo-admin:not(.neo-login) .admin-notification-row:hover { background: var(--neo-low); }
+.neo-admin:not(.neo-login) .admin-notification-dismiss { display: grid; place-items: center; flex: 0 0 auto; width: 23px; height: 23px; border: 1px solid var(--neo-edge); border-radius: 8px; color: var(--neo-muted); background: var(--neo-face); font-size: 16px; line-height: 1; cursor: pointer; }
+.neo-admin:not(.neo-login) .admin-notification-dismiss:hover { color: #a83b36; border-color: #d8a09c; }
+.neo-admin:not(.neo-login) .communication-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 8px 10px 8px 12px; border: 1px solid var(--neo-edge); border-radius: 13px; color: var(--neo-muted); background: var(--neo-low); font-size: 10px; }
+.neo-admin:not(.neo-login) .communication-pagination > div { display: flex; align-items: center; gap: 7px; }
+.neo-admin:not(.neo-login) .communication-pagination strong { min-width: 42px; color: var(--neo-ink); text-align: center; font-size: 10px; }
+.neo-admin:not(.neo-login) .communication-pagination button { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--neo-edge); border-radius: 9px; color: var(--neo-primary); background: var(--neo-face); box-shadow: var(--neo-shadow-sm); cursor: pointer; }
+.neo-admin:not(.neo-login) .communication-pagination button:hover:not(:disabled) { transform: translateY(-1px); color: var(--neo-primary-strong); }
+.neo-admin:not(.neo-login) .communication-pagination button:disabled { cursor: not-allowed; opacity: .4; box-shadow: none; }
+.neo-admin:not(.neo-login) .communication-pagination .material-symbols-outlined { font-size: 18px; }
+.neo-admin:not(.neo-login) .communication-created-groups { display: grid; gap: 9px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--neo-edge); }
+.neo-admin:not(.neo-login) .communication-visitors-section { display: grid; gap: 9px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--neo-edge); }
+.neo-admin:not(.neo-login) .communication-visitors-section .communication-people-list { margin-top: 0; }
+.neo-admin:not(.neo-login) .communication-created-group-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 9px; max-height: 300px; overflow-y: auto; padding: 2px; }
+.neo-admin:not(.neo-login) .communication-created-group-list button { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px; border: 1px solid var(--neo-edge); border-radius: 13px; color: var(--neo-ink); background: var(--neo-low); text-align: left; box-shadow: var(--neo-shadow-sm); cursor: pointer; }
+.neo-admin:not(.neo-login) .communication-created-group-list button:hover { border-color: var(--neo-primary); transform: translateY(-1px); }
+.neo-admin:not(.neo-login) .communication-created-group-list button > span:nth-child(2) { display: grid; gap: 3px; min-width: 0; flex: 1; }.neo-admin:not(.neo-login) .communication-created-group-list strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }.neo-admin:not(.neo-login) .communication-created-group-list small { color: var(--neo-muted); font-size: 9px; }.neo-admin:not(.neo-login) .communication-created-group-list button > .communication-group-icon { width: 32px; height: 32px; }.neo-admin:not(.neo-login) .communication-created-group-actions { display: flex; align-items: center; gap: 8px; color: var(--neo-primary); }.neo-admin:not(.neo-login) .communication-created-group-actions .communication-group-delete { padding: 5px; border-radius: 7px; color: #b23b35; cursor: pointer; }.neo-admin:not(.neo-login) .communication-created-group-actions .communication-group-delete:hover { background: #ffe1dd; color: #8f2420; }

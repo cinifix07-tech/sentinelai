@@ -1,0 +1,7 @@
+{
+  "name": "Sentinel AI",
+  "description": "Smart home security and conversational visitor verification system with ESP32 perimeter radar and real-time intercom.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

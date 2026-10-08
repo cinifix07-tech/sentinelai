@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "surface-dim": "#111319", "secondary": "#3fddbf", "on-tertiary-fixed-variant": "#6600b7", "inverse-on-surface": "#2e3036", "on-secondary": "#00382e", "secondary-container": "#00c1a4", "tertiary-fixed-dim": "#dbb8ff", "error": "#ffb4ab", "primary-fixed-dim": "#00dce6", "on-error": "#690005", "tertiary-container": "#e9d2ff", "surface-container-highest": "#33353b", "on-primary-fixed-variant": "#004f53", "on-background": "#e2e2ea", "on-surface": "#e2e2ea", "on-tertiary": "#470083", "on-primary": "#00373a", "on-error-container": "#ffdad6", "surface-container-high": "#282a30", "secondary-fixed": "#64fadb", "primary": "#e0fdff", "surface-container-low": "#191c21", "surface-variant": "#33353b", "on-surface-variant": "#b9cacb", "inverse-primary": "#00696f", "on-primary-container": "#006a70", "on-secondary-container": "#00483c", "surface-bright": "#37393f", "secondary-fixed-dim": "#3fddbf", "tertiary-fixed": "#efdbff", "surface-tint": "#00dce6", "primary-container": "#00f2fe", "on-primary-fixed": "#002022", "surface": "#111319", "outline-variant": "#3a494b", "inverse-surface": "#e2e2ea", "primary-fixed": "#6ff6ff", "background": "#111319", "on-secondary-fixed-variant": "#005144", "outline": "#849495", "on-tertiary-fixed": "#2b0052", "error-container": "#93000a", "tertiary": "#fef4ff", "on-secondary-fixed": "#00201a", "surface-container": "#1d2025", "surface-container-lowest": "#0c0e13", "on-tertiary-container": "#8132d2" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "margin": "1rem", "gutter": "1rem", "space-sm": "0.5rem", "space-xs": "0.25rem", "space-lg": "1.5rem", "space-md": "1rem", "space-xl": "2rem", "gutter-desktop": "1.5rem", "space-2xl": "3rem", "margin-desktop": "2rem" }, "fontFamily": { "headline-lg": [ "Space Grotesk" ], "label-code": [ "JetBrains Mono" ], "label-badge": [ "JetBrains Mono" ], "headline-xl-mobile": [ "Space Grotesk" ], "body-lg": [ "Geist" ], "display-hero-mobile": [ "Space Grotesk" ], "body-md": [ "Geist" ], "display-hero": [ "Space Grotesk" ], "headline-xl": [ "Space Grotesk" ], "body-sm": [ "Geist" ], "label-numeric": [ "JetBrains Mono" ], "headline-md": [ "Space Grotesk" ] }, "fontSize": { "headline-lg": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "label-code": [ "12px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500" } ], "label-badge": [ "10px", { "lineHeight": "14px", "letterSpacing": "0.08em", "fontWeight": "700" } ], "headline-xl-mobile": [ "26px", { "lineHeight": "34px", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "body-lg": [ "16px", { "lineHeight": "24px", "fontWeight": "400" } ], "display-hero-mobile": [ "32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" } ], "body-md": [ "14px", { "lineHeight": "20px", "fontWeight": "400" } ], "display-hero": [ "48px", { "lineHeight": "56px", "letterSpacing": "-0.03em", "fontWeight": "700" } ], "headline-xl": [ "36px", { "lineHeight": "44px", "letterSpacing": "-0.025em", "fontWeight": "600" } ], "body-sm": [ "12px", { "lineHeight": "18px", "fontWeight": "400" } ], "label-numeric": [ "14px", { "lineHeight": "18px", "letterSpacing": "0.02em", "fontWeight": "600" } ], "headline-md": [ "20px", { "lineHeight": "28px", "letterSpacing": "-0.015em", "fontWeight": "500" } ] } } } };</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest/90 backdrop-blur-xl z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="flex flex-col"><div class="h-16 px-space-md flex items-center gap-space-sm bg-surface-container-lowest/50"><img alt="Brand logo. - Primary color: #0f766e - Font: plusJakartaSans - Mode: light - Roundness: rounded-md" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1WdprAtNZAzBo_4K0QDrePN3bTwiXShBxwRUSXunJeaBNUPZ5-LiEER5MWYI5I8ULgxiGpJbKJxw5myipgA-5z0nIKjx-E_c0IXcXX84Tvz_njFQ0VEJ1lYypHmB-LuNwH3Uhb6PPrOKSJA8nrgGFfjyCB44_H1uPI9spXGo0bWYSkRkikW1QWwKwKmaYhDr8A89_N8r4Xkdf0NSa5IjflBcysbFSK1Co8KL95rSn5efKWrto-v7dJ-n9A"/><div class="flex flex-col"><span class="font-headline-md text-headline-md font-bold tracking-tight text-primary leading-none">SENTINEL AI</span><span class="font-label-badge text-label-badge uppercase tracking-wider text-secondary mt-1">Security Portal</span></div></div><div class="px-space-md py-space-sm"><div class="font-label-badge text-label-badge uppercase text-outline tracking-wider px-space-xs mb-space-xs">Operations</div><nav class="flex flex-col gap-space-xs" data-active-classes="bg-surface-container-high text-primary font-medium rounded-lg"><div class="flex flex-col"><a aria-current="page" class="flex items-center justify-between px-space-sm py-space-xs transition-all bg-surface-container-high text-primary font-medium rounded-lg" data-path="secret-key-access" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">vpn_key</span><span class="font-body-md text-body-md">Secret Key Access</span></div><span class="font-label-badge text-label-badge px-1.5 py-0.5 rounded bg-surface-container text-secondary font-mono">PROD</span></a><a class="flex items-center justify-between px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="ai-communication" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">terminal</span><span class="font-body-md text-body-md">AI Communication</span></div><span class="material-symbols-outlined text-xs text-secondary-container">sensors</span></a></div><div class="mt-space-md"><div class="font-label-badge text-label-badge uppercase text-outline tracking-wider px-space-xs mb-space-xs">Identity &amp; Node</div><div class="flex flex-col gap-space-xs"><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="user-credentials" href="#"><span class="material-symbols-outlined text-base">badge</span><span class="font-body-md text-body-md">User Credentials</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="account-settings" href="#"><span class="material-symbols-outlined text-base">settings_suggest</span><span class="font-body-md text-body-md">Account Settings</span></a></div></div></nav></div></div><div class="p-space-md flex flex-col gap-space-sm bg-surface-container-low/40 backdrop-blur-md"><div class="p-space-sm rounded-lg bg-surface-container/60 flex items-start gap-space-xs"><span class="material-symbols-outlined text-base text-secondary mt-0.5">verified_user</span><div class="flex flex-col"><span class="font-label-code text-label-code font-bold text-on-surface">System Guard Active</span><span class="font-label-badge text-label-badge text-secondary font-mono tracking-wider mt-0.5">TLS 1.3 // ENCRYPTED</span></div></div><a class="flex items-center justify-center gap-space-xs w-full py-space-xs px-space-sm rounded-lg bg-surface-container-low hover:bg-error-container text-on-surface-variant hover:text-on-error-container transition-all font-body-sm text-body-sm" data-path="login" href="#"><span class="material-symbols-outlined text-sm">power_settings_new</span><span>Quick Logout</span></a></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-dim/80 backdrop-blur-xl z-40 flex items-center justify-between px-space-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs font-label-code text-label-code text-on-surface-variant"><span class="text-on-surface-variant/60">GATEWAY</span><span class="text-outline">/</span><span class="text-secondary font-medium tracking-wide">ONLINE MATRIX</span></div><div class="hidden md:flex items-center gap-space-xs px-space-sm py-1 rounded-full bg-surface-container-low/80"><span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span><span class="font-label-badge text-label-badge text-primary uppercase">Sentinel Core Online</span></div><div class="hidden lg:flex items-center gap-1 font-label-badge text-label-badge text-outline font-mono"><span class="material-symbols-outlined text-xs text-secondary-container">lock</span><span>Encrypted Gateway</span></div></div><div class="flex items-center gap-space-md"><button class="p-space-xs rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors relative" type="button"><span class="material-symbols-outlined text-xl">notifications</span><span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary-container ring-2 ring-surface"></span></button><div class="flex items-center gap-space-sm pl-space-xs"><div class="flex flex-col text-right hidden sm:flex"><span class="font-body-sm text-body-sm font-medium text-on-surface">SecOps Agent</span><span class="font-label-badge text-label-badge text-secondary font-mono">LEVEL-04</span></div><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-1 ring-secondary/30" src="https://lh3.googleusercontent.com/aida/AEtjO1UUSWeg6123vRZgzoyxJDuE5hba9W_bKJvLoX2sX_pYeZpX8VyDI9nzrL8H6gCrCGSYjgAGo1cZfjNyW_pVtAys2IIu5024XkHF2yZlJWAcwo8wyLbvygP3MWTsmiRUOQBikuwQU1LNl2r_QEekwib1iYxYlw7aG2Dw5el846jd7SwyjTmQOXmA9Dk26Dzi-ZKAvTgtzuN1-H4xFWK0dLEZVsCAUYztAdQDhKTmsIQ6pvj-wVGNvzmLQw"/></div></div></header><main class="w-full pt-16 bg-surface min-h-screen px-space-xl py-space-lg"><div class="flex flex-col w-full gap-space-lg relative">
+<!-- Dynamic Atmospheric Glow Emitting Backdrops -->
+<div class="absolute -top-12 left-1/3 w-96 h-96 bg-primary-container/5 rounded-full blur-3xl pointer-events-none -z-10"></div>
+<div class="absolute top-80 right-10 w-80 h-80 bg-secondary/5 rounded-full blur-3xl pointer-events-none -z-10"></div>
+<!-- SECTION 1: Telemetry Matrix & Status Header -->
+<section class="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-space-md p-space-lg rounded-xl bg-surface-container-low/70 backdrop-blur-xl shadow-md relative overflow-hidden">
+<div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary-container to-secondary opacity-60"></div>
+<div class="flex flex-col gap-space-xs max-w-2xl">
+<div class="flex flex-wrap items-center gap-space-xs">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-surface-container text-secondary font-label-badge text-label-badge tracking-wider">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary animate-ping"></span>
+          AI ENGINE: ACTIVE (v4.2 NEURAL)
+        </span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-secondary-container/10 text-secondary-fixed font-label-badge text-label-badge tracking-wider">
+<span class="material-symbols-outlined text-xs">shield</span>
+          SECURITY PERIMETER: ENFORCED
+        </span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-primary tracking-tight font-semibold">AI Access Center &amp; Cryptographic Hub</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Real-time cryptographic telemetry, authenticated token routing, and neural gatekeeper terminal.</p>
+</div>
+<!-- Live Telemetry Stat Pills -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-space-sm self-stretch xl:self-auto xl:w-auto">
+<div class="flex flex-col justify-center px-space-md py-space-sm rounded-lg bg-surface-container/60 backdrop-blur-md shadow-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-badge text-label-badge uppercase tracking-wider text-outline">Token Quota</span>
+<span class="material-symbols-outlined text-xs text-secondary">pie_chart</span>
+</div>
+<div class="mt-1 flex items-baseline gap-1">
+<span class="font-headline-md text-headline-md font-bold text-on-surface font-label-numeric">842,910</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">/ 1M</span>
+</div>
+<div class="w-full h-1 bg-surface-container-highest rounded-full mt-2 overflow-hidden">
+<div class="h-full bg-gradient-to-r from-secondary-container to-primary-container" style="width: 84.2%;"></div>
+</div>
+</div>
+<div class="flex flex-col justify-center px-space-md py-space-sm rounded-lg bg-surface-container/60 backdrop-blur-md shadow-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-badge text-label-badge uppercase tracking-wider text-outline">Neural Latency</span>
+<span class="material-symbols-outlined text-xs text-primary-fixed-dim">speed</span>
+</div>
+<div class="mt-1 flex items-baseline gap-1.5">
+<span class="font-headline-md text-headline-md font-bold text-primary font-label-numeric">14</span>
+<span class="font-body-sm text-body-sm text-secondary">ms</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline mt-1 flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> TLS 1.3 Local Node
+        </span>
+</div>
+<div class="flex flex-col justify-center px-space-md py-space-sm rounded-lg bg-surface-container/60 backdrop-blur-md shadow-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-badge text-label-badge uppercase tracking-wider text-outline">API Volume</span>
+<span class="material-symbols-outlined text-xs text-secondary-fixed">sync_alt</span>
+</div>
+<div class="mt-1 flex items-baseline gap-1">
+<span class="font-headline-md text-headline-md font-bold text-on-surface font-label-numeric">18,420</span>
+<span class="font-label-badge text-label-badge text-secondary font-mono">req</span>
+</div>
+<span class="font-body-sm text-body-sm text-secondary-container mt-1">99.98% Success SLA</span>
+</div>
+</div>
+</section>
+<!-- SECTION 2: Master Core Grid (Key Access & AI Terminal) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+<!-- LEFT COLUMN: Secret Key Vault & Hardware Shield (5 Cols) -->
+<div class="lg:col-span-5 flex flex-col gap-space-md">
+<!-- Obsidian Key Card -->
+<div class="rounded-xl bg-surface-container-low/80 backdrop-blur-xl p-space-lg shadow-xl relative overflow-hidden flex flex-col gap-space-md">
+<!-- Laser edge highlight -->
+<div class="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-primary-container via-secondary to-transparent"></div>
+<div class="absolute bottom-0 right-0 w-44 h-44 bg-primary-container/5 rounded-full blur-2xl pointer-events-none"></div>
+<!-- Key Header -->
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary-container shadow-inner">
+<span class="material-symbols-outlined text-xl">vpn_key</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-md text-headline-md font-semibold text-primary">Primary Access Key</span>
+<span class="font-label-code text-label-code text-on-surface-variant font-mono">HMAC-SHA256 // AES-GCM-256</span>
+</div>
+</div>
+<span class="font-label-badge text-label-badge px-2.5 py-1 rounded bg-secondary/10 text-secondary tracking-widest uppercase font-mono shadow-sm">
+            Active &amp; Encrypted
+          </span>
+</div>
+<!-- Cryptographic Key Container Box -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-label-badge text-label-badge uppercase tracking-wider text-outline">Production Key Token</span>
+<span class="font-label-code text-label-code text-secondary font-mono">ID: 0x99F_NODE</span>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-lowest/90 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-space-xs shadow-inner">
+<div class="flex items-center gap-space-xs overflow-hidden px-space-xs py-1">
+<span class="material-symbols-outlined text-outline text-base">lock</span>
+<span class="font-label-code text-label-code tracking-wider text-primary font-mono truncate select-all" id="secretKeyDisplay">
+                sk_live_99f0••••••••••••••••••••••••3a8e9b1
+              </span>
+</div>
+<!-- Key Action Controls -->
+<div class="flex items-center justify-end gap-1 shrink-0">
+<button class="p-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center" id="toggleKeyBtn" title="Toggle visibility" type="button">
+<span class="material-symbols-outlined text-base" id="toggleIcon">visibility</span>
+</button>
+<button class="px-space-sm py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-secondary hover:text-primary-container transition-colors flex items-center gap-1 font-label-badge text-label-badge" id="copyKeyBtn" title="Copy Secret Key" type="button">
+<span class="material-symbols-outlined text-base">content_copy</span>
+<span id="copyText">COPY</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Warning & Health Indicator Notice -->
+<div class="p-space-sm rounded-lg bg-surface-container/50 flex items-start gap-space-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-base text-secondary-container shrink-0 mt-0.5">verified_user</span>
+<p class="font-body-sm text-body-sm leading-relaxed">
+            Key rotation recommended in <span class="text-secondary font-medium">18 days</span>. Origin verified from gateway <span class="font-label-code text-label-code text-primary font-mono">192.168.1.104</span> through hardware HSM via TLS 1.3.
+          </p>
+</div>
+<!-- Key Parameter Tiles -->
+<div class="grid grid-cols-3 gap-space-xs pt-space-xs">
+<div class="p-space-sm rounded-lg bg-surface-container-low/70 flex flex-col">
+<span class="font-label-badge text-label-badge uppercase text-outline">Scope</span>
+<span class="font-label-code text-label-code text-on-surface font-medium truncate mt-1">IoT + Intercom</span>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-low/70 flex flex-col">
+<span class="font-label-badge text-label-badge uppercase text-outline">Rate Limit</span>
+<span class="font-label-code text-label-code text-secondary font-medium truncate mt-1">100 req/s</span>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-low/70 flex flex-col">
+<span class="font-label-badge text-label-badge uppercase text-outline">Whitelist</span>
+<span class="font-label-code text-label-code text-primary-fixed-dim font-medium truncate mt-1">2 Active IPs</span>
+</div>
+</div>
+<!-- Regeneration Drawer CTA -->
+<div class="flex items-center justify-between pt-space-xs">
+<button class="flex items-center gap-space-xs px-space-md py-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-error hover:text-on-surface transition-all font-body-sm text-body-sm font-medium" id="regenTriggerBtn" type="button">
+<span class="material-symbols-outlined text-sm">cycle</span>
+<span>Regenerate Key</span>
+</button>
+<div class="flex items-center gap-1.5 font-label-badge text-label-badge text-outline">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span>MUTATION GUARD ARMED</span>
+</div>
+</div>
+</div>
+<!-- Perimeter Shield Sensor Status Card (Visual Richness) -->
+<div class="rounded-xl bg-surface-container-low/70 backdrop-blur-xl p-space-lg shadow-md relative overflow-hidden flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-lg">shield_with_heart</span>
+<span class="font-headline-md text-headline-md text-primary">Perimeter Sentinel Sensors</span>
+</div>
+<span class="font-label-badge text-label-badge px-2 py-0.5 rounded bg-surface-container text-secondary">3 NODES ONLINE</span>
+</div>
+<!-- Visual Sensor Radar Sparkline / Wave -->
+<div class="p-space-md rounded-lg bg-surface-container-lowest/80 flex flex-col gap-space-sm">
+<div class="flex items-center justify-between font-label-code text-label-code">
+<span class="text-on-surface-variant">Front Intercom Radar Stream</span>
+<span class="text-secondary font-mono">1.2 GHz Doppler</span>
+</div>
+<div class="w-full h-16 relative flex items-center justify-center">
+<svg class="w-full h-full text-secondary" fill="none" preserveaspectratio="none" viewbox="0 0 300 60">
+<path d="M0,30 L30,30 L45,10 L60,50 L75,30 L110,30 L125,5 L140,55 L155,30 L200,30 L210,20 L220,40 L230,30 L300,30" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></path>
+<path d="M0,30 L30,30 L45,10 L60,50 L75,30 L110,30 L125,5 L140,55 L155,30 L200,30 L210,20 L220,40 L230,30 L300,30 L300,60 L0,60 Z" fill="currentColor" fill-opacity="0.06"></path>
+</svg>
+</div>
+<div class="grid grid-cols-2 gap-2 text-body-sm font-body-sm">
+<div class="flex items-center justify-between px-2 py-1 rounded bg-surface-container">
+<span class="text-outline">HC-SR501 PIR:</span>
+<span class="text-secondary font-mono font-medium">Silent / Clear</span>
+</div>
+<div class="flex items-center justify-between px-2 py-1 rounded bg-surface-container">
+<span class="text-outline">ESP32 Camera:</span>
+<span class="text-primary font-mono font-medium">1080p 30fps</span>
+</div>
+</div>
+</div>
+<!-- Quick Access Manifest Link -->
+<div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container/40 hover:bg-surface-container transition-colors cursor-pointer group">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary group-hover:rotate-45 transition-transform text-base">sensors</span>
+<span class="font-body-sm text-body-sm text-on-surface">Inspect Intercom Telemetry Nodes</span>
+</div>
+<span class="material-symbols-outlined text-base text-outline group-hover:text-primary transition-colors">arrow_forward</span>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: ChatGPT-Style Modern AI Security Terminal (7 Cols) -->
+<div class="lg:col-span-7 flex flex-col rounded-xl bg-surface-container-low/80 backdrop-blur-xl shadow-xl overflow-hidden relative min-h-[640px] flex-1">
+<div class="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary-container/40 to-transparent"></div>
+<!-- Terminal Top Bar -->
+<div class="px-space-lg py-space-md bg-surface-container-low flex items-center justify-between gap-space-sm shadow-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-gradient-to-br from-primary-container to-secondary-container flex items-center justify-center text-surface-container-lowest shadow-md">
+<span class="material-symbols-outlined text-xl">smart_toy</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-headline-md text-headline-md text-on-surface font-semibold">Sentinel AI Security Assistant</span>
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-badge text-label-badge text-secondary font-mono tracking-wider">SENTINEL-CORE-V4</span>
+<span class="text-outline text-xs">•</span>
+<span class="font-label-badge text-label-badge text-outline">REAL-TIME THREAT ANALYSIS</span>
+</div>
+</div>
+</div>
+<!-- Terminal Global Actions -->
+<div class="flex items-center gap-space-xs">
+<button class="p-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-1 font-body-sm text-body-sm" id="clearChatBtn" title="Clear Chat History" type="button">
+<span class="material-symbols-outlined text-sm">delete_sweep</span>
+<span class="hidden sm:inline">Clear</span>
+</button>
+<button class="p-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-secondary hover:text-primary transition-colors flex items-center gap-1 font-body-sm text-body-sm" id="exportLogBtn" title="Export Audit Log" type="button">
+<span class="material-symbols-outlined text-sm">file_download</span>
+<span class="hidden sm:inline">Export Log</span>
+</button>
+</div>
+</div>
+<!-- Conversation Stream Area -->
+<div class="flex-1 p-space-lg overflow-y-auto flex flex-col gap-space-lg scroll-smooth max-h-[500px]" id="chatStream">
+<!-- Message 1: AI Greeting -->
+<div class="flex items-start gap-space-md max-w-2xl">
+<div class="w-8 h-8 rounded-lg bg-primary-container/20 text-primary-container flex items-center justify-center shrink-0 mt-1 shadow-sm">
+<span class="material-symbols-outlined text-base">shield</span>
+</div>
+<div class="flex flex-col gap-1.5 flex-1">
+<div class="flex items-center gap-2">
+<span class="font-label-code text-label-code font-bold text-primary">Sentinel AI</span>
+<span class="font-label-badge text-label-badge text-outline font-mono">10:42 AM</span>
+</div>
+<div class="p-space-md rounded-xl rounded-tl-none bg-surface-container/70 text-on-surface font-body-md text-body-md leading-relaxed shadow-sm">
+              Greetings Sarah. Sentinel AI Access Center is active. All perimeter ESP32 sensors and visitor verification protocols are running nominally. How can I assist with your security controls or API access today?
+            </div>
+</div>
+</div>
+<!-- Message 2: User Inquiry -->
+<div class="flex items-start gap-space-md max-w-xl self-end justify-end">
+<div class="flex flex-col gap-1.5 items-end flex-1">
+<div class="flex items-center gap-2">
+<span class="font-label-badge text-label-badge text-outline font-mono">10:43 AM</span>
+<span class="font-label-code text-label-code font-bold text-secondary">SecOps Agent (Sarah)</span>
+</div>
+<div class="p-space-md rounded-xl rounded-tr-none bg-secondary-container/20 text-primary font-body-md text-body-md leading-relaxed shadow-sm">
+              Can you summarize the visitor verification attempts from the front entrance in the last 24 hours?
+            </div>
+</div>
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center shrink-0 mt-1 overflow-hidden">
+<span class="material-symbols-outlined text-secondary text-base">account_circle</span>
+</div>
+</div>
+<!-- Message 3: AI Diagnostic Summary with Badges -->
+<div class="flex items-start gap-space-md max-w-2xl">
+<div class="w-8 h-8 rounded-lg bg-primary-container/20 text-primary-container flex items-center justify-center shrink-0 mt-1 shadow-sm">
+<span class="material-symbols-outlined text-base">shield</span>
+</div>
+<div class="flex flex-col gap-1.5 flex-1">
+<div class="flex items-center gap-2">
+<span class="font-label-code text-label-code font-bold text-primary">Sentinel AI</span>
+<span class="font-label-badge text-label-badge text-outline font-mono">10:44 AM</span>
+</div>
+<div class="p-space-md rounded-xl rounded-tl-none bg-surface-container/70 text-on-surface font-body-md text-body-md leading-relaxed flex flex-col gap-space-sm shadow-sm">
+<p>Here is the summary of the last 24 hours from the Front Entrance Matrix:</p>
+<div class="flex flex-col gap-1.5 p-space-sm rounded-lg bg-surface-container-lowest/80 font-label-code text-label-code">
+<div class="flex items-center justify-between text-secondary">
+<span>✓ FedEx Courier Delivery</span>
+<span class="text-outline font-mono">14:34:12 • Authorized</span>
+</div>
+<div class="flex items-center justify-between text-secondary">
+<span>✓ Scheduled Gardening Pass</span>
+<span class="text-outline font-mono">10:00:04 • Authorized</span>
+</div>
+<div class="flex items-center justify-between text-error">
+<span>⚠ Unrecognized Courier Attempt</span>
+<span class="text-outline font-mono">08:12:49 • Intercom Reroute</span>
+</div>
+</div>
+<p class="text-on-surface-variant">
+                False positive rejection rate is currently <strong class="text-primary font-mono">99.4%</strong>. Would you like me to inspect the PIR radar log or initiate a diagnostic sweep?
+              </p>
+<!-- Feedback & Copy toolbar -->
+<div class="flex items-center justify-between pt-space-xs">
+<div class="flex items-center gap-2">
+<button class="p-1 rounded hover:bg-surface-container-high text-outline hover:text-on-surface transition-colors" title="Copy response" type="button">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container-high text-outline hover:text-secondary transition-colors" title="Helpful response" type="button">
+<span class="material-symbols-outlined text-sm">thumb_up</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container-high text-outline hover:text-error transition-colors" title="Report issue" type="button">
+<span class="material-symbols-outlined text-sm">thumb_down</span>
+</button>
+</div>
+<span class="font-label-badge text-label-badge text-outline font-mono">TOKEN COST: 142</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Suggested Quick Prompt Pills -->
+<div class="px-space-lg pt-space-xs pb-space-xs flex items-center gap-space-xs overflow-x-auto">
+<button class="prompt-pill px-3 py-1 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-primary font-label-badge text-label-badge uppercase tracking-wider transition-colors shrink-0 flex items-center gap-1 shadow-sm" data-prompt="Run Diagnostic Audit" type="button">
+<span class="material-symbols-outlined text-xs text-secondary">troubleshoot</span>
+<span>Run Diagnostic Audit</span>
+</button>
+<button class="prompt-pill px-3 py-1 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-primary font-label-badge text-label-badge uppercase tracking-wider transition-colors shrink-0 flex items-center gap-1 shadow-sm" data-prompt="Rotate Secret Key" type="button">
+<span class="material-symbols-outlined text-xs text-primary-container">vpn_key</span>
+<span>Rotate Secret Key</span>
+</button>
+<button class="prompt-pill px-3 py-1 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-primary font-label-badge text-label-badge uppercase tracking-wider transition-colors shrink-0 flex items-center gap-1 shadow-sm" data-prompt="Check HC-SR501 PIR Status" type="button">
+<span class="material-symbols-outlined text-xs text-secondary-fixed">sensors</span>
+<span>Check HC-SR501 PIR Status</span>
+</button>
+<button class="prompt-pill px-3 py-1 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-primary font-label-badge text-label-badge uppercase tracking-wider transition-colors shrink-0 flex items-center gap-1 shadow-sm" data-prompt="View Intercom Manifest" type="button">
+<span class="material-symbols-outlined text-xs text-secondary">inventory_2</span>
+<span>View Intercom Manifest</span>
+</button>
+</div>
+<!-- Input Bar Section -->
+<div class="p-space-lg bg-surface-container-low/90 flex flex-col gap-space-xs">
+<form class="flex items-center gap-space-xs p-space-xs rounded-xl bg-surface-container-lowest/90 shadow-inner" id="chatForm">
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors flex items-center justify-center" title="Attach Telemetry Log or File" type="button">
+<span class="material-symbols-outlined text-lg">attach_file</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-secondary hover:bg-surface-container transition-colors flex items-center justify-center" title="Voice Verification Command" type="button">
+<span class="material-symbols-outlined text-lg">mic</span>
+</button>
+<input autocomplete="off" class="flex-1 bg-transparent px-space-xs py-2 text-on-surface placeholder:text-outline/70 focus:outline-none font-body-md text-body-md font-label-code" id="chatInput" placeholder="Ask Sentinel AI anything about security events, access rules, or API keys..." type="text"/>
+<button class="px-space-md py-2.5 rounded-lg bg-gradient-to-r from-primary-container to-secondary text-surface-container-lowest font-headline-md text-body-md font-bold flex items-center gap-1.5 shadow-[0_0_16px_rgba(0,242,254,0.35)] hover:brightness-110 transition-all shrink-0" type="submit">
+<span>Query</span>
+<span class="material-symbols-outlined text-base">send</span>
+</button>
+</form>
+<div class="flex items-center justify-between px-space-xs">
+<span class="font-body-sm text-body-sm text-outline">
+            Sentinel AI uses encrypted local neural inference. Verify sensitive hardware triggers.
+          </span>
+<span class="font-label-badge text-label-badge text-secondary font-mono hidden md:inline">
+            ENCLAVE: SECURE_HW_V2
+          </span>
+</div>
+</div>
+</div>
+</div>
+<!-- SECTION 3: Real-Time Audit Log Mini-Terminal (High Density) -->
+<section class="flex flex-col gap-space-sm p-space-lg rounded-xl bg-surface-container-low/70 backdrop-blur-xl shadow-md">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-lg">terminal</span>
+<span class="font-headline-md text-headline-md font-semibold text-primary">Live Cryptographic Audit Feed</span>
+<span class="font-label-badge text-label-badge px-2 py-0.5 rounded bg-surface-container text-secondary font-mono">STREAMING</span>
+</div>
+<span class="font-label-code text-label-code text-outline font-mono">SYNCED WITH LOCAL SENTINEL CORE</span>
+</div>
+<div class="overflow-x-auto">
+<div class="min-w-[650px] flex flex-col gap-1">
+<div class="grid grid-cols-12 px-space-sm py-1 font-label-badge text-label-badge uppercase tracking-wider text-outline">
+<span class="col-span-2">Timestamp</span>
+<span class="col-span-3">Event Type</span>
+<span class="col-span-4">Target Entity</span>
+<span class="col-span-2">Client IP</span>
+<span class="col-span-1 text-right">Status</span>
+</div>
+<div class="grid grid-cols-12 items-center px-space-sm py-2 rounded bg-surface-container-lowest/60 font-label-code text-label-code text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="col-span-2 text-outline font-mono">10:44:19 UTC</span>
+<span class="col-span-3 text-secondary font-mono">API_KEY_QUERY</span>
+<span class="col-span-4 truncate text-on-surface-variant">/v4/access/tokens/hmac-sha256</span>
+<span class="col-span-2 font-mono text-outline">192.168.1.104</span>
+<span class="col-span-1 text-right text-secondary font-bold">200 OK</span>
+</div>
+<div class="grid grid-cols-12 items-center px-space-sm py-2 rounded bg-surface-container-lowest/60 font-label-code text-label-code text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="col-span-2 text-outline font-mono">10:43:02 UTC</span>
+<span class="col-span-3 text-primary-container font-mono">NEURAL_INFERENCE</span>
+<span class="col-span-4 truncate text-on-surface-variant">model:sentinel-core-v4 [visitor_summary]</span>
+<span class="col-span-2 font-mono text-outline">INTERNAL_BUS</span>
+<span class="col-span-1 text-right text-secondary font-bold">EXEC</span>
+</div>
+<div class="grid grid-cols-12 items-center px-space-sm py-2 rounded bg-surface-container-lowest/60 font-label-code text-label-code text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="col-span-2 text-outline font-mono">10:39:55 UTC</span>
+<span class="col-span-3 text-outline font-mono">HEARTBEAT_POLL</span>
+<span class="col-span-4 truncate text-on-surface-variant">ESP32_PERIMETER_GATE_01</span>
+<span class="col-span-2 font-mono text-outline">192.168.1.145</span>
+<span class="col-span-1 text-right text-secondary font-bold">ACK</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+<script>
+  (function initSentinelAccessDashboard() {
+    const rawSecretKey = "";
+    const maskedSecretKey = "Stripe key not configured";
+    let isRevealed = false;
+
+    const keyDisplay = document.getElementById("secretKeyDisplay");
+    const toggleBtn = document.getElementById("toggleKeyBtn");
+    const toggleIcon = document.getElementById("toggleIcon");
+    const copyBtn = document.getElementById("copyKeyBtn");
+    const copyText = document.getElementById("copyText");
+    const regenBtn = document.getElementById("regenTriggerBtn");
+
+    const chatForm = document.getElementById("chatForm");
+    const chatInput = document.getElementById("chatInput");
+    const chatStream = document.getElementById("chatStream");
+    const clearBtn = document.getElementById("clearChatBtn");
+    const exportBtn = document.getElementById("exportLogBtn");
+    const promptPills = document.querySelectorAll(".prompt-pill");
+
+    // Toggle Secret Key Visibility
+    if (toggleBtn && keyDisplay) {
+      toggleBtn.addEventListener("click", () => {
+        isRevealed = !isRevealed;
+        keyDisplay.textContent = isRevealed ? rawSecretKey : maskedSecretKey;
+        toggleIcon.textContent = isRevealed ? "visibility_off" : "visibility";
+      });
+    }
+
+    // Copy Secret Key to Clipboard
+    if (copyBtn && keyDisplay) {
+      copyBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(rawSecretKey);
+          copyText.textContent = "COPIED!";
+          copyBtn.classList.add("text-primary-container");
+          setTimeout(() => {
+            copyText.textContent = "COPY";
+            copyBtn.classList.remove("text-primary-container");
+          }, 2000);
+        } catch (err) {
+          copyText.textContent = "DONE";
+          setTimeout(() => { copyText.textContent = "COPY"; }, 1500);
+        }
+      });
+    }
+
+    function openTypedConfirmation(title, description, confirmLabel, onConfirm) {
+      const backdrop = document.createElement("div");
+      backdrop.className = "fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md";
+      backdrop.innerHTML = `
+        <section class="w-full max-w-lg rounded-2xl border border-white/60 border-t-4 border-t-primary-container bg-surface-container-lowest p-6 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="typed-confirm-title">
+          <div class="flex gap-4">
+            <div class="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-error-container text-error shadow-inner"><span class="material-symbols-outlined">delete_forever</span></div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-4"><div><p class="text-[10px] font-bold uppercase tracking-[0.16em] text-error">Permanent action</p><h2 id="typed-confirm-title" class="mt-1 text-xl font-bold text-on-surface">${title}</h2></div><button id="typed-confirm-close" type="button" class="text-2xl text-on-surface-variant">&times;</button></div>
+              <p class="mt-3 text-sm leading-6 text-on-surface-variant">${description} Type DELETE to continue.</p>
+              <input id="typed-confirm-input" class="mt-4 h-11 w-full rounded-xl bg-surface-container px-3 font-mono font-bold tracking-[0.16em] text-on-surface shadow-inner outline-none" placeholder="DELETE" autocomplete="off" />
+              <div class="mt-5 flex justify-end gap-2"><button id="typed-confirm-cancel" type="button" class="rounded-xl bg-surface-container px-4 py-2.5 text-sm font-semibold text-on-surface">Keep data</button><button id="typed-confirm-submit" type="button" disabled class="rounded-xl bg-error px-4 py-2.5 text-sm font-semibold text-white opacity-50">${confirmLabel}</button></div>
+            </div>
+          </div>
+        </section>`;
+      document.body.appendChild(backdrop);
+      const input = backdrop.querySelector("#typed-confirm-input");
+      const submit = backdrop.querySelector("#typed-confirm-submit");
+      const close = () => backdrop.remove();
+      input.focus();
+      input.addEventListener("input", () => { const ready = input.value.toUpperCase() === "DELETE"; submit.disabled = !ready; submit.classList.toggle("opacity-50", !ready); });
+      backdrop.querySelector("#typed-confirm-close").addEventListener("click", close);
+      backdrop.querySelector("#typed-confirm-cancel").addEventListener("click", close);
+      submit.addEventListener("click", () => { close(); onConfirm(); });
+    }
+
+    // Regenerate Key Confirmation
+    if (regenBtn) {
+      regenBtn.addEventListener("click", () => openTypedConfirmation(
+        "Regenerate secret key?",
+        "This revokes access for all running IoT perimeter controllers until they are re-flashed.",
+        "Regenerate key",
+        () => alert("Key regeneration sequence initiated. Audit dispatch sent to SecOps Lead.")
+      ));
+    }
+
+    // Interactive Chat Handlers
+    function appendUserMessage(text) {
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const userDiv = document.createElement("div");
+      userDiv.className = "flex items-start gap-space-md max-w-xl self-end justify-end";
+      userDiv.innerHTML = `
+        <div class="flex flex-col gap-1.5 items-end flex-1">
+          <div class="flex items-center gap-2">
+            <span class="font-label-badge text-label-badge text-outline font-mono">${timeStr}</span>
+            <span class="font-label-code text-label-code font-bold text-secondary">SecOps Agent</span>
+          </div>
+          <div class="p-space-md rounded-xl rounded-tr-none bg-secondary-container/20 text-primary font-body-md text-body-md leading-relaxed shadow-sm">
+            ${escapeHtml(text)}
+          </div>
+        </div>
+        <div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center shrink-0 mt-1 overflow-hidden">
+          <span class="material-symbols-outlined text-secondary text-base">account_circle</span>
+        </div>
+      `;
+      chatStream.appendChild(userDiv);
+      chatStream.scrollTop = chatStream.scrollHeight;
+    }
+
+    function appendAIMessage(htmlContent) {
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const aiDiv = document.createElement("div");
+      aiDiv.className = "flex items-start gap-space-md max-w-2xl";
+      aiDiv.innerHTML = `
+        <div class="w-8 h-8 rounded-lg bg-primary-container/20 text-primary-container flex items-center justify-center shrink-0 mt-1 shadow-sm">
+          <span class="material-symbols-outlined text-base">shield</span>
+        </div>
+        <div class="flex flex-col gap-1.5 flex-1">
+          <div class="flex items-center gap-2">
+            <span class="font-label-code text-label-code font-bold text-primary">Sentinel AI</span>
+            <span class="font-label-badge text-label-badge text-outline font-mono">${timeStr}</span>
+          </div>
+          <div class="p-space-md rounded-xl rounded-tl-none bg-surface-container/70 text-on-surface font-body-md text-body-md leading-relaxed shadow-sm">
+            ${htmlContent}
+          </div>
+        </div>
+      `;
+      chatStream.appendChild(aiDiv);
+      chatStream.scrollTop = chatStream.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function processAIResponse(query) {
+      const lower = query.toLowerCase();
+      let response = "";
+
+      if (lower.includes("audit") || lower.includes("diagnostic")) {
+        response = `Audit complete. All 3 ESP32 nodes report 0% packet loss. Cryptographic nonce verified against TLS 1.3 local enclave. Zero intrusion anomalies discovered in the last rolling cycle.`;
+      } else if (lower.includes("rotate") || lower.includes("key")) {
+        response = `Secret key rotation requires Level-04 authorization pin. Primary key HMAC-SHA256 will automatically expire in 18 days if unattended. Would you like to schedule an automated maintenance window?`;
+      } else if (lower.includes("pir") || lower.includes("sensor")) {
+        response = `HC-SR501 PIR sensor status is nominal. Current analog voltage: 3.31V. Trigger sensitivity threshold configured to HIGH. Zero unverified motion bursts detected outside delivery windows.`;
+      } else if (lower.includes("intercom") || lower.includes("manifest")) {
+        response = `Intercom manifest loaded: 2 visitors granted two-way video relay today. All captured RTSP streaming packets encrypted via SRTP with session keys intact.`;
+      } else {
+        response = `Query processed via local inference engine. Sentinel AI is analyzing perimeter telemetry for "${escapeHtml(query)}". All perimeter guards remain armed and responsive.`;
+      }
+
+      setTimeout(() => {
+        appendAIMessage(response);
+      }, 500);
+    }
+
+    if (chatForm) {
+      chatForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const text = chatInput.value.trim();
+        if (!text) return;
+        appendUserMessage(text);
+        chatInput.value = "";
+        processAIResponse(text);
+      });
+    }
+
+    // Quick Prompt Pills
+    promptPills.forEach(pill => {
+      pill.addEventListener("click", () => {
+        const text = pill.getAttribute("data-prompt");
+        if (text) {
+          appendUserMessage(text);
+          processAIResponse(text);
+        }
+      });
+    });
+
+    // Clear Chat
+    if (clearBtn) {
+      clearBtn.addEventListener("click", () => {
+        openTypedConfirmation(
+          "Clear security conversation?",
+          "This permanently clears the visible conversation from this session.",
+          "Clear conversation",
+          () => { chatStream.innerHTML = ""; appendAIMessage("Conversation session cleared. Sentinel AI memory refreshed for current session."); }
+        );
+      });
+    }
+
+    // Export Log
+    if (exportBtn) {
+      exportBtn.addEventListener("click", () => {
+        alert("Exporting encrypted cryptographic transcript to secure client vault...");
+      });
+    }
+  })();
+</script></main></div></body></html>
