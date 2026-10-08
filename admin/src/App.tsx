@@ -12,9 +12,17 @@ import { SettingsScreen } from './components/screens/SettingsScreen';
 import { QuickPassValidationForm } from './components/QuickPassValidationForm';
 
 const tabs: AppTab[] = ['home', 'monitor', 'voice', 'visitors', 'settings'];
+const appBasePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+function appPath(pathname: string) {
+  if (appBasePath && pathname.startsWith(appBasePath)) {
+    return pathname.slice(appBasePath.length) || '/';
+  }
+  return pathname;
+}
 
 function readTab(pathname: string): AppTab {
-  const path = pathname.slice(1) as AppTab;
+  const path = appPath(pathname).slice(1) as AppTab;
   return tabs.includes(path) ? path : 'home';
 }
 
@@ -27,18 +35,19 @@ export default function App() {
   const [authenticated, setAuthenticated] = useState(hasSavedSession);
   const [pathname, setPathname] = useState(() => window.location.pathname);
   const currentTab = readTab(pathname);
-  const showLogin = !authenticated || pathname === '/login';
+  const showLogin = !authenticated || appPath(pathname) === '/login';
 
   function setCurrentTab(tab: AppTab) {
-    if (window.location.pathname !== `/${tab}`) {
-      window.history.pushState({}, '', `/${tab}`);
+    const nextPath = `${appBasePath}/${tab}`;
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({}, '', nextPath);
     }
-    setPathname(`/${tab}`);
+    setPathname(nextPath);
   }
 
   useEffect(() => {
   function syncRoute() {
-      let path = window.location.pathname;
+      let path = appPath(window.location.pathname);
       if (!hasSavedSession()) {
         clearSession();
         setCurrentUser(null);
@@ -49,10 +58,11 @@ export default function App() {
       } else {
         setCurrentUser(getSession());
       }
-      if (path !== window.location.pathname) {
-        window.history.replaceState({}, '', path);
+      const nextPath = `${appBasePath}${path}`;
+      if (nextPath !== window.location.pathname) {
+        window.history.replaceState({}, '', nextPath);
       }
-      setPathname(path);
+      setPathname(nextPath);
     }
     syncRoute();
     window.addEventListener('popstate', syncRoute);
@@ -70,8 +80,9 @@ export default function App() {
   function handleAuthenticated(session?: ReturnType<typeof getSession>) {
     setCurrentUser(session || getSession());
     setAuthenticated(true);
-    window.history.replaceState({}, '', '/home');
-    setPathname('/home');
+    const nextPath = `${appBasePath}/home`;
+    window.history.replaceState({}, '', nextPath);
+    setPathname(nextPath);
   }
   function handleLogout() {
     logoutFromBackend();

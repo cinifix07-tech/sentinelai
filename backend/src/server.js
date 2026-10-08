@@ -58,6 +58,10 @@ server.on('error', (error) => {
   throw error;
 });
 
-server.listen(port, '0.0.0.0', () => {
-  console.log(`Smart Home Security API listening on http://0.0.0.0:${port}`);
-});
+if (require.main === module && !process.env.VERCEL) {
+  server.listen(port, '0.0.0.0', () => {
+    console.log(`Smart Home Security API listening on http://0.0.0.0:${port}`);
+  });
+}
+
+module.exports = app;

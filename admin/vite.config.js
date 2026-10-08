@@ -29,6 +29,7 @@ function backendDevServer() {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [backendDevServer(), react(), tailwindcss()],
+  base: process.env.VERCEL ? '/admin/' : '/',
   server: {
     proxy: {
       '/api': {

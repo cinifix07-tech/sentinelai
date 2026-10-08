@@ -1,0 +1,42 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "admin": {
+      "root": "admin/",
+      "framework": "vite",
+      "buildCommand": "npm run build",
+      "outputDirectory": "dist/"
+    },
+    "backend": {
+      "root": "backend/",
+      "framework": "express",
+      "entrypoint": "src/server.js"
+    },
+    "client": {
+      "root": "client/",
+      "framework": "vite",
+      "buildCommand": "npm run build",
+      "outputDirectory": "dist/"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/admin/(.*)",
+      "destination": {
+        "service": "admin"
+      }
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "client"
+      }
+    }
+  ]
+}
