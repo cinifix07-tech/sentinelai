@@ -89,6 +89,24 @@ export const userByEmail = internalQuery({
   args: { email: v.string() },
   handler: async (ctx, args) => {
     const email = args.email.trim().toLowerCase();
+    const account = await ctx.db.query("userAccounts").withIndex("by_email", (q) => q.eq("email", email)).unique();
+    if (account) {
+      return {
+        user_id: account.legacyUserId,
+        full_name: account.fullName,
+        email: account.email,
+        password_hash: account.passwordHash,
+        role: account.role,
+        created_at: account.createdAt,
+        residence: account.residence,
+        last_seen_at: account.lastSeenAt,
+        is_active: account.isActive,
+        phone: account.phone,
+        first_name: account.firstName,
+        last_name: account.lastName,
+        username: account.username,
+      };
+    }
     const record = await ctx.db
       .query("legacyRecords")
       .withIndex("by_table", (q) => q.eq("tableName", "users"))
@@ -105,6 +123,8 @@ export const updateUserPassword = internalMutation({
   args: { email: v.string(), passwordHash: v.string() },
   handler: async (ctx, args) => {
     const email = args.email.trim().toLowerCase();
+    const account = await ctx.db.query("userAccounts").withIndex("by_email", (q) => q.eq("email", email)).unique();
+    if (account) await ctx.db.patch(account._id, { passwordHash: args.passwordHash });
     const records = await ctx.db
       .query("legacyRecords")
       .withIndex("by_table", (q) => q.eq("tableName", "users"))

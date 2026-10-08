@@ -160,6 +160,48 @@ export const importLegacyBatch = internalMutation({
       };
       if (existing) await ctx.db.patch(existing._id, value);
       else await ctx.db.insert("legacyRecords", value);
+
+      const payload = record.payload as Record<string, unknown>;
+      const optionalString = (field: string) => typeof payload[field] === "string" ? payload[field] as string : undefined;
+      if (args.tableName === "users") {
+        const account = {
+          legacyUserId: String(payload.user_id || record.legacyId),
+          fullName: String(payload.full_name || payload.email || "User"),
+          email: String(payload.email || "").toLowerCase(),
+          passwordHash: String(payload.password_hash || payload.password || ""),
+          role: String(payload.role || "USER"),
+          isActive: payload.is_active !== false,
+          ...(optionalString("created_at") ? { createdAt: optionalString("created_at") } : {}),
+          ...(optionalString("residence") ? { residence: optionalString("residence") } : {}),
+          ...(optionalString("last_seen_at") ? { lastSeenAt: optionalString("last_seen_at") } : {}),
+          ...(optionalString("phone") ? { phone: optionalString("phone") } : {}),
+          ...(optionalString("first_name") ? { firstName: optionalString("first_name") } : {}),
+          ...(optionalString("last_name") ? { lastName: optionalString("last_name") } : {}),
+          ...(optionalString("username") ? { username: optionalString("username") } : {}),
+          ...(optionalString("noise_audio_data") ? { noiseAudioData: optionalString("noise_audio_data") } : {}),
+          ...(optionalString("noise_audio_name") ? { noiseAudioName: optionalString("noise_audio_name") } : {}),
+          ...(optionalString("noise_audio_type") ? { noiseAudioType: optionalString("noise_audio_type") } : {}),
+          ...(optionalString("voice_audio_data") ? { voiceAudioData: optionalString("voice_audio_data") } : {}),
+          ...(optionalString("voice_audio_name") ? { voiceAudioName: optionalString("voice_audio_name") } : {}),
+          ...(optionalString("voice_audio_type") ? { voiceAudioType: optionalString("voice_audio_type") } : {}),
+        };
+        const existingAccount = await ctx.db.query("userAccounts").withIndex("by_legacy_id", (q) => q.eq("legacyUserId", account.legacyUserId)).unique();
+        if (existingAccount) await ctx.db.patch(existingAccount._id, account);
+        else await ctx.db.insert("userAccounts", account);
+      }
+      if (args.tableName === "authorized_profiles") {
+        const profile = {
+          legacyProfileId: String(payload.profile_id || record.legacyId),
+          status: String(payload.status || "ACTIVE"),
+          ...(optionalString("user_id") ? { userId: optionalString("user_id") } : {}),
+          ...(optionalString("security_phrase") ? { securityPhrase: optionalString("security_phrase") } : {}),
+          ...(optionalString("voice_reference") ? { voiceReference: optionalString("voice_reference") } : {}),
+          ...(optionalString("created_at") ? { createdAt: optionalString("created_at") } : {}),
+        };
+        const existingProfile = await ctx.db.query("authorizedProfiles").withIndex("by_legacy_id", (q) => q.eq("legacyProfileId", profile.legacyProfileId)).unique();
+        if (existingProfile) await ctx.db.patch(existingProfile._id, profile);
+        else await ctx.db.insert("authorizedProfiles", profile);
+      }
       for (const chunk of record.chunks ?? []) {
         const existingChunk = await ctx.db
           .query("legacyRecordChunks")
