@@ -1,0 +1,10 @@
+{
+  "name": "sentinelai",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "deploy": "npx vercel --prod",
+    "deploy:preview": "npx vercel",
+    "vercel:dev": "npx vercel dev"
+  }
+}
