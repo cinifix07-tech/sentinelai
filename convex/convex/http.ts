@@ -1,7 +1,7 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { auth } from "./auth";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 
 const http = httpRouter();
 
@@ -9,6 +9,15 @@ auth.addHttpRoutes(http);
 
 function backendToken(request: Request) {
   return request.headers.get("x-backend-control-token") || "";
+}
+
+function backendAuthorized(request: Request) {
+  const expected = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.CONVEX_CONTROL_TOKEN;
+  return Boolean(expected && backendToken(request) && backendToken(request) === expected);
+}
+
+function unauthorized() {
+  return Response.json({ error: "Unauthorized" }, { status: 401 });
 }
 
 function tableFromRequest(request: Request) {
@@ -19,10 +28,11 @@ http.route({
   path: "/app/records",
   method: "GET",
   handler: httpAction(async (ctx, request) => {
+    if (!backendAuthorized(request)) return unauthorized();
     const url = new URL(request.url);
     const tableName = tableFromRequest(request);
-    const records = await ctx.runQuery(api.appData.listRecords, {
-      token: backendToken(request), tableName,
+    const records = await ctx.runQuery(internal.appData.listRecords, {
+      tableName,
       limit: Number(url.searchParams.get("limit") || 100),
       orderField: url.searchParams.get("order") || undefined,
       descending: url.searchParams.get("descending") !== "false",
@@ -35,8 +45,9 @@ http.route({
   path: "/app/records/find",
   method: "GET",
   handler: httpAction(async (ctx, request) => {
+    if (!backendAuthorized(request)) return unauthorized();
     const url = new URL(request.url);
-    const record = await ctx.runQuery(api.appData.findRecord, { token: backendToken(request), tableName: tableFromRequest(request), legacyId: url.searchParams.get("id") || "" });
+    const record = await ctx.runQuery(internal.appData.findRecord, { tableName: tableFromRequest(request), legacyId: url.searchParams.get("id") || "" });
     return Response.json({ record });
   }),
 });
@@ -45,8 +56,9 @@ http.route({
   path: "/app/records",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
+    if (!backendAuthorized(request)) return unauthorized();
     const body = await request.json();
-    const record = await ctx.runMutation(api.appData.insertRecord, { token: backendToken(request), tableName: String(body.table || ""), legacyId: String(body.id || crypto.randomUUID()), payload: body.payload || {} });
+    const record = await ctx.runMutation(internal.appData.insertRecord, { tableName: String(body.table || ""), legacyId: String(body.id || crypto.randomUUID()), payload: body.payload || {} });
     return Response.json({ record });
   }),
 });
@@ -55,8 +67,9 @@ http.route({
   path: "/app/records",
   method: "PATCH",
   handler: httpAction(async (ctx, request) => {
+    if (!backendAuthorized(request)) return unauthorized();
     const body = await request.json();
-    const record = await ctx.runMutation(api.appData.updateRecord, { token: backendToken(request), tableName: String(body.table || ""), legacyId: String(body.id || ""), patch: body.patch || {} });
+    const record = await ctx.runMutation(internal.appData.updateRecord, { tableName: String(body.table || ""), legacyId: String(body.id || ""), patch: body.patch || {} });
     return Response.json({ record });
   }),
 });
@@ -65,8 +78,9 @@ http.route({
   path: "/app/records",
   method: "DELETE",
   handler: httpAction(async (ctx, request) => {
+    if (!backendAuthorized(request)) return unauthorized();
     const url = new URL(request.url);
-    const record = await ctx.runMutation(api.appData.deleteRecord, { token: backendToken(request), tableName: tableFromRequest(request), legacyId: url.searchParams.get("id") || "" });
+    const record = await ctx.runMutation(internal.appData.deleteRecord, { tableName: tableFromRequest(request), legacyId: url.searchParams.get("id") || "" });
     return Response.json({ record });
   }),
 });
@@ -75,11 +89,12 @@ http.route({
   path: "/app/users/by-email",
   method: "GET",
   handler: httpAction(async (ctx, request) => {
+    if (!backendAuthorized(request)) return unauthorized();
     const url = new URL(request.url);
     const email = url.searchParams.get("email") || "";
     if (!email) return Response.json({ error: "Email is required" }, { status: 400 });
     try {
-      const user = await ctx.runQuery(api.appData.userByEmail, { token: backendToken(request), email });
+      const user = await ctx.runQuery(internal.appData.userByEmail, { email });
       return Response.json({ user });
     } catch (error) {
       return Response.json({ error: error instanceof Error ? error.message : "Unauthorized" }, { status: 401 });
@@ -91,10 +106,10 @@ http.route({
   path: "/app/users/password",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
+    if (!backendAuthorized(request)) return unauthorized();
     const body = await request.json();
     try {
-      const result = await ctx.runMutation(api.appData.updateUserPassword, {
-        token: backendToken(request),
+      const result = await ctx.runMutation(internal.appData.updateUserPassword, {
         email: String(body.email || ""),
         passwordHash: String(body.password_hash || ""),
       });

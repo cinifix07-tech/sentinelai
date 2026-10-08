@@ -1,20 +1,14 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
-
-function isBackendRequest(token: string) {
-  const expected = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.CONVEX_CONTROL_TOKEN;
-  return Boolean(expected && token && token === expected);
-}
+import { internalMutation, internalQuery } from "./_generated/server";
 
 function recordPayload(record: { legacyId: string; payload: unknown }) {
   const payload = (record.payload && typeof record.payload === "object") ? record.payload as Record<string, unknown> : {};
   return { ...payload, _legacy_id: record.legacyId };
 }
 
-export const listRecords = query({
-  args: { token: v.string(), tableName: v.string(), limit: v.optional(v.number()), orderField: v.optional(v.string()), descending: v.optional(v.boolean()) },
+export const listRecords = internalQuery({
+  args: { tableName: v.string(), limit: v.optional(v.number()), orderField: v.optional(v.string()), descending: v.optional(v.boolean()) },
   handler: async (ctx, args) => {
-    if (!isBackendRequest(args.token)) throw new Error("Unauthorized");
     const limit = Math.min(Math.max(args.limit ?? 100, 1), 1000);
     const records = await ctx.db.query("legacyRecords")
       .withIndex("by_table", (q) => q.eq("tableName", args.tableName))
@@ -31,10 +25,9 @@ export const listRecords = query({
   },
 });
 
-export const findRecord = query({
-  args: { token: v.string(), tableName: v.string(), legacyId: v.string() },
+export const findRecord = internalQuery({
+  args: { tableName: v.string(), legacyId: v.string() },
   handler: async (ctx, args) => {
-    if (!isBackendRequest(args.token)) throw new Error("Unauthorized");
     const record = await ctx.db.query("legacyRecords")
       .withIndex("by_table_legacy_id", (q) => q.eq("tableName", args.tableName).eq("legacyId", args.legacyId))
       .unique();
@@ -42,10 +35,9 @@ export const findRecord = query({
   },
 });
 
-export const insertRecord = mutation({
-  args: { token: v.string(), tableName: v.string(), legacyId: v.string(), payload: v.any() },
+export const insertRecord = internalMutation({
+  args: { tableName: v.string(), legacyId: v.string(), payload: v.any() },
   handler: async (ctx, args) => {
-    if (!isBackendRequest(args.token)) throw new Error("Unauthorized");
     const existing = await ctx.db.query("legacyRecords")
       .withIndex("by_table_legacy_id", (q) => q.eq("tableName", args.tableName).eq("legacyId", args.legacyId))
       .unique();
@@ -55,10 +47,9 @@ export const insertRecord = mutation({
   },
 });
 
-export const updateRecord = mutation({
-  args: { token: v.string(), tableName: v.string(), legacyId: v.string(), patch: v.any() },
+export const updateRecord = internalMutation({
+  args: { tableName: v.string(), legacyId: v.string(), patch: v.any() },
   handler: async (ctx, args) => {
-    if (!isBackendRequest(args.token)) throw new Error("Unauthorized");
     const existing = await ctx.db.query("legacyRecords")
       .withIndex("by_table_legacy_id", (q) => q.eq("tableName", args.tableName).eq("legacyId", args.legacyId))
       .unique();
@@ -70,10 +61,9 @@ export const updateRecord = mutation({
   },
 });
 
-export const deleteRecord = mutation({
-  args: { token: v.string(), tableName: v.string(), legacyId: v.string() },
+export const deleteRecord = internalMutation({
+  args: { tableName: v.string(), legacyId: v.string() },
   handler: async (ctx, args) => {
-    if (!isBackendRequest(args.token)) throw new Error("Unauthorized");
     const existing = await ctx.db.query("legacyRecords")
       .withIndex("by_table_legacy_id", (q) => q.eq("tableName", args.tableName).eq("legacyId", args.legacyId))
       .unique();
@@ -84,10 +74,9 @@ export const deleteRecord = mutation({
   },
 });
 
-export const userByEmail = query({
-  args: { token: v.string(), email: v.string() },
+export const userByEmail = internalQuery({
+  args: { email: v.string() },
   handler: async (ctx, args) => {
-    if (!isBackendRequest(args.token)) throw new Error("Unauthorized");
     const email = args.email.trim().toLowerCase();
     const record = await ctx.db
       .query("legacyRecords")
@@ -101,10 +90,9 @@ export const userByEmail = query({
   },
 });
 
-export const updateUserPassword = mutation({
-  args: { token: v.string(), email: v.string(), passwordHash: v.string() },
+export const updateUserPassword = internalMutation({
+  args: { email: v.string(), passwordHash: v.string() },
   handler: async (ctx, args) => {
-    if (!isBackendRequest(args.token)) throw new Error("Unauthorized");
     const email = args.email.trim().toLowerCase();
     const records = await ctx.db
       .query("legacyRecords")
