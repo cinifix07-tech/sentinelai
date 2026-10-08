@@ -33,6 +33,14 @@
       "outputDirectory": "dist/",
       "rewrites": [
         {
+          "source": "/client",
+          "destination": "/"
+        },
+        {
+          "source": "/client/(login|dashboard|settings)",
+          "destination": "/"
+        },
+        {
           "source": "/login",
           "destination": "/"
         },
@@ -58,6 +66,12 @@
       "source": "/api/(.*)",
       "destination": {
         "service": "backend"
+      }
+    },
+    {
+      "source": "/client/(.*)",
+      "destination": {
+        "service": "client"
       }
     },
     {
