@@ -5,28 +5,34 @@ const path = require('path');
 // repository root does not silently skip backend/.env.
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
-const requiredEnv = [
-  'DATABASE_HOST',
-  'DATABASE_USER',
-  'DATABASE_NAME',
-  'JWT_SECRET',
-];
-
 function missingConfig() {
   const placeholderValues = new Set(['replace_me', 'replace_with_a_long_random_secret']);
-  const missing = requiredEnv.filter((key) => !process.env[key] || placeholderValues.has(process.env[key]));
-  if (!process.env.DATABASE_PASSWORD || placeholderValues.has(process.env.DATABASE_PASSWORD)) {
-    missing.push('DATABASE_PASSWORD');
+  const missing = [];
+
+  // Hosted providers expose one DATABASE_URL; local development can keep the
+  // individual PostgreSQL settings below.
+  if (!process.env.DATABASE_URL) {
+    for (const key of ['DATABASE_HOST', 'DATABASE_USER', 'DATABASE_NAME', 'DATABASE_PASSWORD']) {
+      if (!process.env[key] || placeholderValues.has(process.env[key])) missing.push(key);
+    }
   }
+  if (!process.env.JWT_SECRET || placeholderValues.has(process.env.JWT_SECRET)) missing.push('JWT_SECRET');
   return missing;
 }
 
 const pool = new Pool({
-  host: process.env.DATABASE_HOST,
-  port: Number(process.env.DATABASE_PORT || 5432),
-  user: process.env.DATABASE_USER,
-  password: String(process.env.DATABASE_PASSWORD ?? ''),
-  database: process.env.DATABASE_NAME || 'smart_home_security',
+  ...(process.env.DATABASE_URL
+    ? {
+        connectionString: process.env.DATABASE_URL,
+        ssl: process.env.DATABASE_SSL === 'false' ? false : { rejectUnauthorized: false },
+      }
+    : {
+        host: process.env.DATABASE_HOST,
+        port: Number(process.env.DATABASE_PORT || 5432),
+        user: process.env.DATABASE_USER,
+        password: String(process.env.DATABASE_PASSWORD ?? ''),
+        database: process.env.DATABASE_NAME || 'smart_home_security',
+      }),
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
