@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-const { query, missingConfig } = require('../config/database');
+const { getUserByEmail, updateUserPassword } = require('../services/convexData');
 const { recordActivity } = require('../services/activityLog');
 
 const passwordColumns = ['password_hash', 'password'];
@@ -40,8 +40,7 @@ function fallbackLogin(email, password) {
   const fallbackEnabled = process.env.NODE_ENV !== 'production'
     && process.env.ALLOW_DEV_FALLBACK_AUTH === 'true';
   if (!fallbackEnabled) return null;
-  const missing = missingConfig();
-  if (!missing.includes('DATABASE_PASSWORD')) return null;
+  if (!process.env.CONVEX_SITE_URL || !process.env.CONVEX_CONTROL_TOKEN) return null;
   const user = fallbackUsers.find((item) => item.email === email.toLowerCase() && item.password === password);
   return user ? signUser(user, true) : null;
 }
@@ -134,8 +133,8 @@ async function login(req, res, next) {
       return res.json(fallback);
     }
 
-    const result = await query('SELECT * FROM users WHERE email = $1 LIMIT 1', [email.toLowerCase()]);
-    const user = result.rows[0];
+    const result = await getUserByEmail(email.toLowerCase());
+    const user = result.user;
     if (!user) {
       await recordActivity({
         req,
@@ -186,11 +185,8 @@ async function sendResetOtp(req, res, next) {
       return res.status(400).json({ error: 'Email address is required' });
     }
 
-    const userResult = await query(
-      'SELECT user_id, email, full_name, role FROM users WHERE email = $1 LIMIT 1',
-      [normalizedEmail]
-    );
-    const user = userResult.rows[0];
+    const userResult = await getUserByEmail(normalizedEmail);
+    const user = userResult.user;
     if (!user) return res.status(404).json({ error: 'No user account found for that email address' });
 
     const code = String(crypto.randomInt(100000, 1000000));
@@ -289,13 +285,13 @@ async function resetPassword(req, res, next) {
       return res.status(401).json({ error: 'Verify the Gmail OTP before changing the password' });
     }
 
-    const userResult = await query('SELECT user_id, email FROM users WHERE email = $1 LIMIT 1', [normalizedEmail]);
-    const user = userResult.rows[0];
+    const userResult = await getUserByEmail(normalizedEmail);
+    const user = userResult.user;
     if (!user) return res.status(404).json({ error: 'No user account found for that email address' });
 
     const rounds = Number(process.env.BCRYPT_ROUNDS || 10);
     const hash = await bcrypt.hash(nextPassword, rounds);
-    await query('UPDATE users SET password_hash = $1 WHERE email = $2', [hash, normalizedEmail]);
+    await updateUserPassword(normalizedEmail, hash);
     resetOtpRecords.delete(normalizedEmail);
     await recordActivity({
       req,

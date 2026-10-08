@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
-const { query } = require('../config/database');
+const crypto = require('crypto');
+const { getUserByEmail, listRecords, insertRecord, updateRecord } = require('../services/convexData');
 const { recordActivity } = require('../services/activityLog');
 
 async function create(req, res, next) {
@@ -32,35 +33,20 @@ async function create(req, res, next) {
     if (noiseAudioData && String(noiseAudioData).length > 7_000_000) return res.status(413).json({ error: 'Background noise audio is too large.' });
     if (voiceAudioData && String(voiceAudioData).length > 7_000_000) return res.status(413).json({ error: 'Voice introduction audio is too large.' });
 
-    await query(`
-      ALTER TABLE users
-        ADD COLUMN IF NOT EXISTS first_name TEXT,
-        ADD COLUMN IF NOT EXISTS last_name TEXT,
-        ADD COLUMN IF NOT EXISTS username TEXT,
-        ADD COLUMN IF NOT EXISTS noise_audio_data TEXT,
-        ADD COLUMN IF NOT EXISTS noise_audio_name TEXT,
-        ADD COLUMN IF NOT EXISTS noise_audio_type TEXT,
-        ADD COLUMN IF NOT EXISTS voice_audio_data TEXT,
-        ADD COLUMN IF NOT EXISTS voice_audio_name TEXT,
-        ADD COLUMN IF NOT EXISTS voice_audio_type TEXT
-    `);
-
-    const existing = await query('SELECT user_id FROM users WHERE email = $1 OR username = $1 LIMIT 1', [email]);
-    if (existing.rows[0]) return res.status(409).json({ error: 'That username is already registered.' });
+    const existing = (await listRecords('users', { limit: 1000 })).find((item) => String(item.email || item.username || '').toLowerCase() === email);
+    if (existing) return res.status(409).json({ error: 'That username is already registered.' });
 
     const passwordHash = await bcrypt.hash(String(password), 12);
     const fullName = `${firstName.trim()} ${lastName.trim()}`;
-    const result = await query(
-      `INSERT INTO users
-        (full_name, first_name, last_name, email, username, phone, password_hash, role, is_active,
-         noise_audio_data, noise_audio_name, noise_audio_type, voice_audio_data, voice_audio_name, voice_audio_type)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, $9, $10, $11, $12, $13, $14)
-       RETURNING user_id, full_name, first_name, last_name, email, username, phone, role, is_active, created_at`,
-      [fullName, firstName.trim(), lastName.trim(), email, email, phone?.trim() || null, passwordHash, normalizedRole,
-        noiseAudioData || null, noiseAudioName || null, noiseAudioType || null,
-        voiceAudioData || null, voiceAudioName || null, voiceAudioType || null]
-    );
-    const user = result.rows[0];
+    const userId = crypto.randomUUID();
+    const user = await insertRecord('users', userId, {
+      user_id: userId, full_name: fullName, first_name: firstName.trim(), last_name: lastName.trim(),
+      email, username: email, phone: phone?.trim() || null, password_hash: passwordHash, role: normalizedRole,
+      is_active: true, noise_audio_data: noiseAudioData || null, noise_audio_name: noiseAudioName || null,
+      noise_audio_type: noiseAudioType || null, voice_audio_data: voiceAudioData || null,
+      voice_audio_name: voiceAudioName || null, voice_audio_type: voiceAudioType || null,
+      created_at: new Date().toISOString(),
+    });
     await recordActivity({ req, actor: user, result: 'USER_CREATED', reason: `${req.user?.email || 'Admin'} created user ${user.email}` });
     return res.status(201).json(user);
   } catch (error) {
@@ -77,27 +63,15 @@ async function updateSelf(req, res, next) {
     if (!fullName || !email || !residence) return res.status(400).json({ error: 'Full name, email, and residence are required.' });
     if (phone && !/^\d+$/.test(phone)) return res.status(400).json({ error: 'Phone number must contain numbers only.' });
 
-    await query(`
-      ALTER TABLE users
-        ADD COLUMN IF NOT EXISTS residence TEXT,
-        ADD COLUMN IF NOT EXISTS phone TEXT
-    `);
     const currentId = String(req.user?.user_id || '');
-    const duplicate = await query(
-      'SELECT user_id FROM users WHERE lower(email) = $1 AND user_id::text <> $2 LIMIT 1',
-      [email, currentId]
-    );
-    if (duplicate.rows[0]) return res.status(409).json({ error: 'That email address is already in use.' });
-
-    const result = await query(`
-      UPDATE users
-      SET full_name = $1, email = $2, phone = $3, residence = $4
-      WHERE user_id::text = $5 OR lower(email) = lower($2)
-      RETURNING user_id, full_name, email, phone, residence, role, is_active, created_at
-    `, [fullName, email, phone || null, residence, currentId]);
-    if (!result.rows[0]) return res.status(404).json({ error: 'User account not found.' });
-    await recordActivity({ req, actor: result.rows[0], result: 'PROFILE_UPDATED', reason: `User updated profile details for ${email}` });
-    return res.json(result.rows[0]);
+    const users = await listRecords('users', { limit: 1000 });
+    const duplicate = users.find((item) => String(item.email || '').toLowerCase() === email && String(item._legacy_id) !== currentId);
+    if (duplicate) return res.status(409).json({ error: 'That email address is already in use.' });
+    const account = users.find((item) => String(item._legacy_id) === currentId || String(item.email || '').toLowerCase() === String(req.user?.email || '').toLowerCase());
+    if (!account) return res.status(404).json({ error: 'User account not found.' });
+    const updated = await updateRecord('users', account._legacy_id, { full_name: fullName, email, phone: phone || null, residence });
+    await recordActivity({ req, actor: updated, result: 'PROFILE_UPDATED', reason: `User updated profile details for ${email}` });
+    return res.json(updated);
   } catch (error) {
     return next(error);
   }
@@ -112,14 +86,10 @@ async function changePassword(req, res, next) {
       return res.status(400).json({ error: 'Password must be 10+ characters and include uppercase, lowercase, number, and symbol.' });
     }
     const passwordHash = await bcrypt.hash(password, 12);
-    const result = await query(`
-      UPDATE users
-      SET password_hash = $1
-      WHERE user_id::text = $2
-      RETURNING user_id, full_name, email, role
-    `, [passwordHash, userId]);
-    if (!result.rows[0]) return res.status(404).json({ error: 'User account not found.' });
-    await recordActivity({ req, actor: result.rows[0], result: 'PASSWORD_CHANGED', reason: `${req.user?.email || 'Admin'} changed the password for ${result.rows[0].email}` });
+    const account = (await listRecords('users', { limit: 1000 })).find((item) => String(item._legacy_id) === userId);
+    if (!account) return res.status(404).json({ error: 'User account not found.' });
+    const updated = await updateRecord('users', account._legacy_id, { password_hash: passwordHash });
+    await recordActivity({ req, actor: updated, result: 'PASSWORD_CHANGED', reason: `${req.user?.email || 'Admin'} changed the password for ${updated.email}` });
     return res.json({ ok: true });
   } catch (error) {
     return next(error);
@@ -142,13 +112,9 @@ async function changeSelfPassword(req, res, next) {
     }
 
     const identity = String(req.user?.user_id || req.user?.email || '').trim();
-    const accountResult = await query(`
-      SELECT user_id, full_name, email, password_hash, password
-        FROM users
-       WHERE user_id::text = $1 OR lower(email) = lower($1)
-       LIMIT 1
-    `, [identity]);
-    const account = accountResult.rows[0];
+    const account = identity.includes('@')
+      ? (await getUserByEmail(identity)).user
+      : (await listRecords('users', { limit: 1000 })).find((item) => String(item._legacy_id) === identity);
     const storedPassword = account?.password_hash || account?.password;
     const validCurrentPassword = account && storedPassword
       ? await bcrypt.compare(currentPassword, storedPassword)
@@ -165,7 +131,7 @@ async function changeSelfPassword(req, res, next) {
     }
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
-    await query('UPDATE users SET password_hash = $1 WHERE user_id = $2', [passwordHash, account.user_id]);
+    await updateRecord('users', account._legacy_id || account.user_id, { password_hash: passwordHash });
     await recordActivity({
       req,
       actor: account,

@@ -7,6 +7,104 @@ const http = httpRouter();
 
 auth.addHttpRoutes(http);
 
+function backendToken(request: Request) {
+  return request.headers.get("x-backend-control-token") || "";
+}
+
+function tableFromRequest(request: Request) {
+  return new URL(request.url).searchParams.get("table") || "";
+}
+
+http.route({
+  path: "/app/records",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const tableName = tableFromRequest(request);
+    const records = await ctx.runQuery(api.appData.listRecords, {
+      token: backendToken(request), tableName,
+      limit: Number(url.searchParams.get("limit") || 100),
+      orderField: url.searchParams.get("order") || undefined,
+      descending: url.searchParams.get("descending") !== "false",
+    });
+    return Response.json({ records });
+  }),
+});
+
+http.route({
+  path: "/app/records/find",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const record = await ctx.runQuery(api.appData.findRecord, { token: backendToken(request), tableName: tableFromRequest(request), legacyId: url.searchParams.get("id") || "" });
+    return Response.json({ record });
+  }),
+});
+
+http.route({
+  path: "/app/records",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const body = await request.json();
+    const record = await ctx.runMutation(api.appData.insertRecord, { token: backendToken(request), tableName: String(body.table || ""), legacyId: String(body.id || crypto.randomUUID()), payload: body.payload || {} });
+    return Response.json({ record });
+  }),
+});
+
+http.route({
+  path: "/app/records",
+  method: "PATCH",
+  handler: httpAction(async (ctx, request) => {
+    const body = await request.json();
+    const record = await ctx.runMutation(api.appData.updateRecord, { token: backendToken(request), tableName: String(body.table || ""), legacyId: String(body.id || ""), patch: body.patch || {} });
+    return Response.json({ record });
+  }),
+});
+
+http.route({
+  path: "/app/records",
+  method: "DELETE",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const record = await ctx.runMutation(api.appData.deleteRecord, { token: backendToken(request), tableName: tableFromRequest(request), legacyId: url.searchParams.get("id") || "" });
+    return Response.json({ record });
+  }),
+});
+
+http.route({
+  path: "/app/users/by-email",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const email = url.searchParams.get("email") || "";
+    if (!email) return Response.json({ error: "Email is required" }, { status: 400 });
+    try {
+      const user = await ctx.runQuery(api.appData.userByEmail, { token: backendToken(request), email });
+      return Response.json({ user });
+    } catch (error) {
+      return Response.json({ error: error instanceof Error ? error.message : "Unauthorized" }, { status: 401 });
+    }
+  }),
+});
+
+http.route({
+  path: "/app/users/password",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const body = await request.json();
+    try {
+      const result = await ctx.runMutation(api.appData.updateUserPassword, {
+        token: backendToken(request),
+        email: String(body.email || ""),
+        passwordHash: String(body.password_hash || ""),
+      });
+      return Response.json(result);
+    } catch (error) {
+      return Response.json({ error: error instanceof Error ? error.message : "Unauthorized" }, { status: 401 });
+    }
+  }),
+});
+
 function deviceToken(request: Request) {
   return request.headers.get("x-device-key") || "";
 }

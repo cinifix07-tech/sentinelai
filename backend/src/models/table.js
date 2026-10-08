@@ -1,6 +1,13 @@
-const { query } = require('../config/database');
+const { listRecords, findRecord, insertRecord, updateRecord, deleteRecord } = require('../services/convexData');
 
 const identifier = /^[a-z_][a-z0-9_]*$/i;
+const idColumns = {
+  users: 'user_id',
+  devices: 'device_id',
+  interview_questions: 'question_id',
+  security_events: 'event_id',
+  alerts: 'alert_id',
+};
 
 function assertIdentifier(value) {
   if (!identifier.test(value)) throw new Error(`Unsafe SQL identifier: ${value}`);
@@ -16,15 +23,13 @@ function compact(data, allowed) {
 async function list(table, orderColumn = 'created_at', limit = 100) {
   table = assertIdentifier(table);
   orderColumn = assertIdentifier(orderColumn);
-  const result = await query(`SELECT * FROM ${table} ORDER BY ${orderColumn} DESC LIMIT $1`, [limit]);
-  return result.rows;
+  return listRecords(table, { order: orderColumn, limit });
 }
 
 async function findById(table, idColumn, id) {
   table = assertIdentifier(table);
   idColumn = assertIdentifier(idColumn);
-  const result = await query(`SELECT * FROM ${table} WHERE ${idColumn} = $1`, [id]);
-  return result.rows[0] || null;
+  return findRecord(table, id);
 }
 
 async function insert(table, data, allowed) {
@@ -32,11 +37,8 @@ async function insert(table, data, allowed) {
   const row = compact(data, allowed);
   const keys = Object.keys(row).map(assertIdentifier);
   if (!keys.length) throw Object.assign(new Error('No valid fields supplied'), { status: 400 });
-  const columns = keys.join(', ');
-  const placeholders = keys.map((_, index) => `$${index + 1}`).join(', ');
-  const values = keys.map((key) => row[key]);
-  const result = await query(`INSERT INTO ${table} (${columns}) VALUES (${placeholders}) RETURNING *`, values);
-  return result.rows[0];
+  const id = String(row[idColumns[table] || 'id'] || `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  return insertRecord(table, id, { ...row, [idColumns[table] || 'id']: id });
 }
 
 async function update(table, idColumn, id, data, allowed) {
@@ -45,18 +47,13 @@ async function update(table, idColumn, id, data, allowed) {
   const row = compact(data, allowed);
   const keys = Object.keys(row).map(assertIdentifier);
   if (!keys.length) throw Object.assign(new Error('No valid fields supplied'), { status: 400 });
-  const setSql = keys.map((key, index) => `${key} = $${index + 1}`).join(', ');
-  const values = keys.map((key) => row[key]);
-  values.push(id);
-  const result = await query(`UPDATE ${table} SET ${setSql} WHERE ${idColumn} = $${values.length} RETURNING *`, values);
-  return result.rows[0] || null;
+  return updateRecord(table, id, row);
 }
 
 async function remove(table, idColumn, id) {
   table = assertIdentifier(table);
   idColumn = assertIdentifier(idColumn);
-  const result = await query(`DELETE FROM ${table} WHERE ${idColumn} = $1 RETURNING *`, [id]);
-  return result.rows[0] || null;
+  return deleteRecord(table, id);
 }
 
 module.exports = { compact, list, findById, insert, update, remove };

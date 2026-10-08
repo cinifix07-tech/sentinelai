@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as appData from "../appData.js";
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
 import type * as iot from "../iot.js";
@@ -20,6 +21,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  appData: typeof appData;
   auth: typeof auth;
   http: typeof http;
   iot: typeof iot;
