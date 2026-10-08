@@ -26,12 +26,15 @@ export const listRecords = internalQuery({
 });
 
 export const findRecord = internalQuery({
-  args: { tableName: v.string(), legacyId: v.string() },
+  args: { tableName: v.string(), legacyId: v.string(), idField: v.optional(v.string()) },
   handler: async (ctx, args) => {
     const record = await ctx.db.query("legacyRecords")
       .withIndex("by_table_legacy_id", (q) => q.eq("tableName", args.tableName).eq("legacyId", args.legacyId))
       .unique();
-    return record ? recordPayload(record) : null;
+    if (record) return recordPayload(record);
+    const records = await ctx.db.query("legacyRecords").withIndex("by_table", (q) => q.eq("tableName", args.tableName)).collect();
+    const match = records.find((item) => String((item.payload as Record<string, unknown>)?.[args.idField || "id"] ?? "") === args.legacyId);
+    return match ? recordPayload(match) : null;
   },
 });
 
@@ -48,11 +51,15 @@ export const insertRecord = internalMutation({
 });
 
 export const updateRecord = internalMutation({
-  args: { tableName: v.string(), legacyId: v.string(), patch: v.any() },
+  args: { tableName: v.string(), legacyId: v.string(), idField: v.optional(v.string()), patch: v.any() },
   handler: async (ctx, args) => {
-    const existing = await ctx.db.query("legacyRecords")
+    let existing = await ctx.db.query("legacyRecords")
       .withIndex("by_table_legacy_id", (q) => q.eq("tableName", args.tableName).eq("legacyId", args.legacyId))
       .unique();
+    if (!existing) {
+      const records = await ctx.db.query("legacyRecords").withIndex("by_table", (q) => q.eq("tableName", args.tableName)).collect();
+      existing = records.find((item) => String((item.payload as Record<string, unknown>)?.[args.idField || "id"] ?? "") === args.legacyId) ?? null;
+    }
     if (!existing) return null;
     const payload = (existing.payload && typeof existing.payload === "object") ? existing.payload as Record<string, unknown> : {};
     const nextPayload = { ...payload, ...(args.patch as Record<string, unknown>) };
@@ -62,11 +69,15 @@ export const updateRecord = internalMutation({
 });
 
 export const deleteRecord = internalMutation({
-  args: { tableName: v.string(), legacyId: v.string() },
+  args: { tableName: v.string(), legacyId: v.string(), idField: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    const existing = await ctx.db.query("legacyRecords")
+    let existing = await ctx.db.query("legacyRecords")
       .withIndex("by_table_legacy_id", (q) => q.eq("tableName", args.tableName).eq("legacyId", args.legacyId))
       .unique();
+    if (!existing) {
+      const records = await ctx.db.query("legacyRecords").withIndex("by_table", (q) => q.eq("tableName", args.tableName)).collect();
+      existing = records.find((item) => String((item.payload as Record<string, unknown>)?.[args.idField || "id"] ?? "") === args.legacyId) ?? null;
+    }
     if (!existing) return null;
     const row = recordPayload(existing);
     await ctx.db.delete(existing._id);

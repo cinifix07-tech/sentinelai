@@ -42,8 +42,8 @@ async function listRecords(table, { order = 'created_at', limit = 100 } = {}) {
   return result.records || [];
 }
 
-async function findRecord(table, id) {
-  const result = await convexRequest(`/app/records/find?table=${encodeURIComponent(table)}&id=${encodeURIComponent(id)}`);
+async function findRecord(table, id, idField = 'id') {
+  const result = await convexRequest(`/app/records/find?table=${encodeURIComponent(table)}&id=${encodeURIComponent(id)}&id_field=${encodeURIComponent(idField)}`);
   return result.record || null;
 }
 
@@ -52,13 +52,13 @@ async function insertRecord(table, id, payload) {
   return result.record;
 }
 
-async function updateRecord(table, id, patch) {
-  const result = await convexRequest('/app/records', { method: 'PATCH', body: JSON.stringify({ table, id, patch }) });
+async function updateRecord(table, id, patch, idField = 'id') {
+  const result = await convexRequest('/app/records', { method: 'PATCH', body: JSON.stringify({ table, id, id_field: idField, patch }) });
   return result.record || null;
 }
 
-async function deleteRecord(table, id) {
-  const result = await convexRequest(`/app/records?table=${encodeURIComponent(table)}&id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+async function deleteRecord(table, id, idField = 'id') {
+  const result = await convexRequest(`/app/records?table=${encodeURIComponent(table)}&id=${encodeURIComponent(id)}&id_field=${encodeURIComponent(idField)}`, { method: 'DELETE' });
   return result.record || null;
 }
 

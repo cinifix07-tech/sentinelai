@@ -52,7 +52,7 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     if (!backendAuthorized(request)) return unauthorized();
     const url = new URL(request.url);
-    const record = await ctx.runQuery(internal.appData.findRecord, { tableName: tableFromRequest(request), legacyId: url.searchParams.get("id") || "" });
+    const record = await ctx.runQuery(internal.appData.findRecord, { tableName: tableFromRequest(request), legacyId: url.searchParams.get("id") || "", idField: url.searchParams.get("id_field") || undefined });
     return Response.json({ record });
   }),
 });
@@ -74,7 +74,7 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     if (!backendAuthorized(request)) return unauthorized();
     const body = await request.json();
-    const record = await ctx.runMutation(internal.appData.updateRecord, { tableName: String(body.table || ""), legacyId: String(body.id || ""), patch: body.patch || {} });
+    const record = await ctx.runMutation(internal.appData.updateRecord, { tableName: String(body.table || ""), legacyId: String(body.id || ""), idField: body.id_field ? String(body.id_field) : undefined, patch: body.patch || {} });
     return Response.json({ record });
   }),
 });
@@ -85,7 +85,7 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     if (!backendAuthorized(request)) return unauthorized();
     const url = new URL(request.url);
-    const record = await ctx.runMutation(internal.appData.deleteRecord, { tableName: tableFromRequest(request), legacyId: url.searchParams.get("id") || "" });
+    const record = await ctx.runMutation(internal.appData.deleteRecord, { tableName: tableFromRequest(request), legacyId: url.searchParams.get("id") || "", idField: url.searchParams.get("id_field") || undefined });
     return Response.json({ record });
   }),
 });

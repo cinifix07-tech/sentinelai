@@ -29,7 +29,7 @@ async function list(table, orderColumn = 'created_at', limit = 100) {
 async function findById(table, idColumn, id) {
   table = assertIdentifier(table);
   idColumn = assertIdentifier(idColumn);
-  return findRecord(table, id);
+  return findRecord(table, id, idColumn);
 }
 
 async function insert(table, data, allowed) {
@@ -47,13 +47,13 @@ async function update(table, idColumn, id, data, allowed) {
   const row = compact(data, allowed);
   const keys = Object.keys(row).map(assertIdentifier);
   if (!keys.length) throw Object.assign(new Error('No valid fields supplied'), { status: 400 });
-  return updateRecord(table, id, row);
+  return updateRecord(table, id, row, idColumn);
 }
 
 async function remove(table, idColumn, id) {
   table = assertIdentifier(table);
   idColumn = assertIdentifier(idColumn);
-  return deleteRecord(table, id);
+  return deleteRecord(table, id, idColumn);
 }
 
 module.exports = { compact, list, findById, insert, update, remove };
