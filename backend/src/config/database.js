@@ -1,5 +1,9 @@
 const { Pool } = require('pg');
-require('dotenv').config();
+const path = require('path');
+
+// Resolve the local file from this module so starting the backend from the
+// repository root does not silently skip backend/.env.
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
 const requiredEnv = [
   'DATABASE_HOST',
