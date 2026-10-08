@@ -20,6 +20,11 @@ function unauthorized() {
   return Response.json({ error: "Unauthorized" }, { status: 401 });
 }
 
+function migrationAuthorized(request: Request, token: string) {
+  const expected = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.MIGRATION_TOKEN;
+  return { configured: Boolean(expected), valid: Boolean(expected && token && token === expected && request.headers.get("x-migration-token") === token) };
+}
+
 function tableFromRequest(request: Request) {
   return new URL(request.url).searchParams.get("table") || "";
 }
@@ -192,14 +197,12 @@ http.route({
   path: "/migration/import",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
-    const expected = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.MIGRATION_TOKEN;
-    const provided = request.headers.get("x-migration-token");
-    if (!expected || provided !== expected) {
-      return new Response("Unauthorized", { status: 401 });
-    }
-
     const body = await request.json();
-    const result = await ctx.runMutation(api.myFunctions.importLegacyBatch, body);
+    const migrationAuth = migrationAuthorized(request, String(body.token || ""));
+    if (!migrationAuth.configured) return Response.json({ error: "Migration token is not configured" }, { status: 503 });
+    if (!migrationAuth.valid) return unauthorized();
+    const { token: _token, ...migration } = body;
+    const result = await ctx.runMutation(internal.myFunctions.importLegacyBatch, migration);
     return Response.json(result);
   }),
 });

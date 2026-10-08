@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { query, mutation, action } from "./_generated/server";
+import { query, mutation, action, internalMutation } from "./_generated/server";
 import { api } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
@@ -129,9 +129,8 @@ export const migrationSummary = query({
 });
 
 // Used only by the one-time PostgreSQL migration utility. Keep the token in Convex env.
-export const importLegacyBatch = mutation({
+export const importLegacyBatch = internalMutation({
   args: {
-    token: v.string(),
     tableName: v.string(),
     records: v.array(v.object({
       legacyId: v.string(),
@@ -145,8 +144,6 @@ export const importLegacyBatch = mutation({
     })),
   },
   handler: async (ctx, args) => {
-    const expected = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.MIGRATION_TOKEN;
-    if (!expected || args.token !== expected) throw new Error("Invalid migration token");
     const now = Date.now();
     let imported = 0;
     for (const record of args.records) {
