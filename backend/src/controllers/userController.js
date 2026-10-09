@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
-const { getUserByEmail, listRecords, insertRecord, updateRecord } = require('../services/convexData');
+const { getUserByEmail, listRecords, insertRecord, updateRecord, syncUserAccount } = require('../services/convexData');
 const { recordActivity } = require('../services/activityLog');
 
 async function create(req, res, next) {
@@ -47,6 +47,7 @@ async function create(req, res, next) {
       voice_audio_name: voiceAudioName || null, voice_audio_type: voiceAudioType || null,
       created_at: new Date().toISOString(),
     });
+    await syncUserAccount(user);
     await recordActivity({ req, actor: user, result: 'USER_CREATED', reason: `${req.user?.email || 'Admin'} created user ${user.email}` });
     return res.status(201).json(user);
   } catch (error) {
@@ -70,6 +71,7 @@ async function updateSelf(req, res, next) {
     const account = users.find((item) => String(item._legacy_id) === currentId || String(item.email || '').toLowerCase() === String(req.user?.email || '').toLowerCase());
     if (!account) return res.status(404).json({ error: 'User account not found.' });
     const updated = await updateRecord('users', account._legacy_id, { full_name: fullName, email, phone: phone || null, residence });
+    await syncUserAccount(updated);
     await recordActivity({ req, actor: updated, result: 'PROFILE_UPDATED', reason: `User updated profile details for ${email}` });
     return res.json(updated);
   } catch (error) {
@@ -89,6 +91,7 @@ async function changePassword(req, res, next) {
     const account = (await listRecords('users', { limit: 1000 })).find((item) => String(item._legacy_id) === userId);
     if (!account) return res.status(404).json({ error: 'User account not found.' });
     const updated = await updateRecord('users', account._legacy_id, { password_hash: passwordHash });
+    await syncUserAccount(updated);
     await recordActivity({ req, actor: updated, result: 'PASSWORD_CHANGED', reason: `${req.user?.email || 'Admin'} changed the password for ${updated.email}` });
     return res.json({ ok: true });
   } catch (error) {
@@ -131,7 +134,8 @@ async function changeSelfPassword(req, res, next) {
     }
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
-    await updateRecord('users', account._legacy_id || account.user_id, { password_hash: passwordHash });
+    const updated = await updateRecord('users', account._legacy_id || account.user_id, { password_hash: passwordHash });
+    await syncUserAccount({ ...account, ...updated, password_hash: passwordHash });
     await recordActivity({
       req,
       actor: account,

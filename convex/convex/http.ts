@@ -125,6 +125,17 @@ http.route({
   }),
 });
 
+http.route({
+  path: "/app/users/sync",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!backendAuthorized(request)) return unauthorized();
+    const body = await request.json();
+    const account = await ctx.runMutation(internal.appData.upsertUserAccount, { payload: body.payload || {} });
+    return Response.json({ account });
+  }),
+});
+
 function deviceToken(request: Request) {
   return request.headers.get("x-device-key") || "";
 }

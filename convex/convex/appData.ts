@@ -143,3 +143,30 @@ export const updateUserPassword = internalMutation({
     return { updated: true };
   },
 });
+
+export const upsertUserAccount = internalMutation({
+  args: { payload: v.any() },
+  handler: async (ctx, args) => {
+    const payload = args.payload as Record<string, unknown>;
+    const optionalString = (field: string) => typeof payload[field] === "string" ? payload[field] as string : undefined;
+    const account = {
+      legacyUserId: String(payload.user_id || payload._legacy_id || ""),
+      fullName: String(payload.full_name || payload.email || "User"),
+      email: String(payload.email || "").toLowerCase(),
+      passwordHash: String(payload.password_hash || payload.password || ""),
+      role: String(payload.role || "USER"),
+      isActive: payload.is_active !== false,
+      ...(optionalString("created_at") ? { createdAt: optionalString("created_at") } : {}),
+      ...(optionalString("residence") ? { residence: optionalString("residence") } : {}),
+      ...(optionalString("last_seen_at") ? { lastSeenAt: optionalString("last_seen_at") } : {}),
+      ...(optionalString("phone") ? { phone: optionalString("phone") } : {}),
+      ...(optionalString("first_name") ? { firstName: optionalString("first_name") } : {}),
+      ...(optionalString("last_name") ? { lastName: optionalString("last_name") } : {}),
+      ...(optionalString("username") ? { username: optionalString("username") } : {}),
+    };
+    const existing = await ctx.db.query("userAccounts").withIndex("by_legacy_id", (q) => q.eq("legacyUserId", account.legacyUserId)).unique();
+    if (existing) await ctx.db.patch(existing._id, account);
+    else await ctx.db.insert("userAccounts", account);
+    return account;
+  },
+});
