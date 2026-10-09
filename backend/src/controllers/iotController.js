@@ -265,15 +265,16 @@ async function convexIngest(req, res, next) {
 async function convexMode(req, res, next) {
   try {
     const body = await convexTelemetry('/iot/mode');
-    res.json({ ok: true, state: body.state });
+    res.json({ ok: true, state: { mode: body.state?.mode || 'away', lockdown_active: Boolean(body.state?.lockdownActive ?? body.state?.lockdown_active), updated_at: body.state?.updatedAt } });
   } catch (error) { next(error); }
 }
 
 async function convexUpdateMode(req, res, next) {
   try {
     const result = await convexSetMode(String(req.body?.mode || '').toLowerCase(), req.body?.lockdown_active);
-    socket.emit('iot:mode', result);
-    res.json({ ok: true, state: result });
+    const state = { mode: result?.mode || 'away', lockdown_active: Boolean(result?.lockdownActive ?? result?.lockdown_active), updated_at: result?.updatedAt };
+    socket.emit('iot:mode', state);
+    res.json({ ok: true, state });
   } catch (error) { next(error); }
 }
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AppTab, AppTheme } from '../types';
 import { BRAND_ASSETS } from '../mockData';
 import { apiGet, apiPut } from '../api.js';
@@ -300,6 +301,40 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </header>
+
+      {showThemeMenu && typeof document !== 'undefined' && createPortal(
+        <div className="admin-theme-modal-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setShowThemeMenu(false);
+        }}>
+          <div className="admin-theme-modal" role="dialog" aria-modal="true" aria-labelledby="theme-modal-title">
+            <div className="admin-theme-modal-header">
+              <div>
+                <span className="admin-theme-modal-kicker">COLOR / BACKGROUND ATMOSPHERE</span>
+                <h2 id="theme-modal-title">Background atmosphere</h2>
+              </div>
+              <button type="button" className="admin-theme-modal-close" onClick={() => setShowThemeMenu(false)} aria-label="Close background atmosphere selector">×</button>
+            </div>
+            <div className="admin-theme-modal-options">
+              {THEMES.map((th) => (
+                <button
+                  key={th.id}
+                  type="button"
+                  onClick={() => {
+                    onChangeTheme(th.id);
+                    setShowThemeMenu(false);
+                  }}
+                  className={`admin-theme-option ${currentTheme === th.id ? 'is-active' : ''}`}
+                >
+                  <span className={`admin-theme-swatch ${th.bgClass}`} />
+                  <span><strong>{th.label}</strong><small>{th.desc}</small></span>
+                  {currentTheme === th.id && <span className="material-symbols-outlined">check</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
 
       {/* Notifications Drawer Modal */}
       {showNotifications && (

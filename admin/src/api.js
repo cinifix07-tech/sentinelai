@@ -177,6 +177,40 @@ export async function apiPost(path, body = {}) {
   return data;
 }
 
+export async function streamApiPost(path, body = {}, onEvent = () => {}) {
+  const session = getSession();
+  const response = await requestApi(path, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${session?.token || ''}`,
+      'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
+    },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || 'AI request failed.');
+  }
+  if (!response.body) throw new Error('AI stream is unavailable.');
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+    const events = buffer.split(/\n\n/);
+    buffer = events.pop() || '';
+    for (const rawEvent of events) {
+      const eventName = rawEvent.split('\n').find((line) => line.startsWith('event: '))?.slice(7) || 'message';
+      const dataLine = rawEvent.split('\n').find((line) => line.startsWith('data: '));
+      if (!dataLine) continue;
+      onEvent(eventName, JSON.parse(dataLine.slice(6)));
+    }
+    if (done) break;
+  }
+}
+
 export async function apiPut(path, body = {}) {
   const session = getSession();
   const response = await requestApi(path, {

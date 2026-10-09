@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { apiDelete, apiGet, apiPost, getSession } from '../../api.js';
+import { apiDelete, apiGet, apiPost, getSession, streamApiPost } from '../../api.js';
 import { DeleteConfirmModal } from '../PremiumUI';
 
 interface VoiceScreenProps {
@@ -42,6 +42,7 @@ interface CommunicationMessage {
   attachment_name?: string;
   attachment_type?: string;
   attachment_size?: number;
+  is_mine?: boolean;
 }
 
 interface CommunicationGroup {
@@ -58,6 +59,7 @@ interface GroupMessage {
   message: string;
   created_at: string;
   sender_name?: string;
+  is_mine?: boolean;
 }
 
 function formatTime(value?: string) {
@@ -111,6 +113,7 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({ onUnlockDoor }) => {
   const [groupLoading, setGroupLoading] = useState(false);
   const [deleteGroupTarget, setDeleteGroupTarget] = useState<CommunicationGroup | null>(null);
   const [deleteGroupBusy, setDeleteGroupBusy] = useState(false);
+  const useMessengerWorkspace = true;
   const transcriptEndRef = useRef<HTMLDivElement | null>(null);
   const communicationEndRef = useRef<HTMLDivElement | null>(null);
   const groupEndRef = useRef<HTMLDivElement | null>(null);
@@ -226,6 +229,7 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({ onUnlockDoor }) => {
 
   async function openCommunication(person: PresenceUser) {
     setSelectedPerson(person);
+    setSelectedGroup(null);
     setCommunicationLoading(true);
     setCommunicationError('');
     try {
@@ -274,10 +278,11 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({ onUnlockDoor }) => {
 
   function renderAttachment(message: CommunicationMessage) {
     if (!message.attachment_data) return null;
-    if (message.attachment_type?.startsWith('image/')) return <img src={message.attachment_data} alt={message.attachment_name || 'Attached image'} className="communication-attachment-image" />;
-    if (message.attachment_type?.startsWith('video/')) return <video controls preload="metadata" className="communication-attachment-media"><source src={message.attachment_data} type={message.attachment_type} /></video>;
-    if (message.attachment_type?.startsWith('audio/')) return <audio controls preload="metadata" className="communication-attachment-audio"><source src={message.attachment_data} type={message.attachment_type} /></audio>;
-    return <a className="communication-attachment-file" href={message.attachment_data} download={message.attachment_name || 'attachment'}><span className="material-symbols-outlined">download</span>{message.attachment_name || 'Download attachment'}</a>;
+    const data = String(message.attachment_data);
+    if (message.attachment_type?.startsWith('image/') && data.startsWith('data:')) return <img src={data} alt={message.attachment_name || 'Attached image'} className="communication-attachment-image" />;
+    if (message.attachment_type?.startsWith('video/') && data.startsWith('data:')) return <video controls preload="metadata" className="communication-attachment-media"><source src={data} type={message.attachment_type} /></video>;
+    if (message.attachment_type?.startsWith('audio/') && data.startsWith('data:')) return <audio controls preload="metadata" className="communication-attachment-audio"><source src={data} type={message.attachment_type} /></audio>;
+    return <a className="communication-attachment-file" href={data} download={message.attachment_name || 'attachment'}><span className="material-symbols-outlined">download</span>{message.attachment_name || 'Download attachment'}</a>;
   }
 
   function toggleGroupMember(userId: string) {
@@ -307,6 +312,7 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({ onUnlockDoor }) => {
 
   async function openGroup(group: CommunicationGroup) {
     setSelectedGroup(group);
+    setSelectedPerson(null);
     setGroupLoading(true);
     try {
       setGroupMessages(await apiGet(`/communicate/groups/${encodeURIComponent(String(group.group_id))}/messages`));
@@ -414,21 +420,20 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({ onUnlockDoor }) => {
             evaluation_result: answeredCount + 1 >= questions.length ? 'AUTHORIZED' : 'IN_PROGRESS',
           });
         }
-        const aiResponse = await apiPost('/ai/chat', {
+        const aiMessageId = `ai-${Date.now()}`;
+        setVisitorMessages((prev) => [...prev, { id: aiMessageId, sender: 'ai', time: formatTime(), text: '' }]);
+        await streamApiPost('/ai/chat', {
           message: text,
           context: {
             role: 'admin_access_control',
             active_question: activeQuestion?.question_text || 'No database policy question is currently loaded.',
             progress: questions.length ? `${answeredCount + 1}/${questions.length}` : 'No questions loaded',
           },
+        }, (eventName, payload) => {
+          if (eventName === 'error') throw new Error(payload.error || 'AI response failed.');
+          if (eventName === 'delta') setVisitorMessages((prev) => prev.map((item) => item.id === aiMessageId ? { ...item, text: `${item.text}${payload.text || ''}` } : item));
         });
         setAiConnectionStatus('connected');
-        setVisitorMessages((prev) => [...prev, {
-          id: `ai-${Date.now()}`,
-          sender: 'ai',
-          time: formatTime(),
-          text: aiResponse.message,
-        }]);
       } catch (error) {
         setAiConnectionStatus('error');
         setQuestionError(error instanceof Error ? error.message : 'Could not complete the admin access-control request.');
@@ -437,8 +442,8 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({ onUnlockDoor }) => {
   };
 
   return (
-    <div className="flex flex-col w-full gap-5 max-w-7xl mx-auto pb-24">
-      <div className="flex flex-col bg-surface-container-lowest p-4 sm:p-5 rounded-xl shadow-sm gap-2">
+    <div className="communication-page-shell messenger-only-page flex flex-col w-full gap-5 max-w-7xl mx-auto pb-24">
+      <div className="communication-ai-header flex flex-col bg-surface-container-lowest p-4 sm:p-5 rounded-xl shadow-sm gap-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-fixed text-on-primary-fixed shadow-sm">
@@ -475,9 +480,47 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({ onUnlockDoor }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        <div className="lg:col-span-12 flex flex-col gap-4">
-          <div className="communication-presence-panel">
+      <div className="communication-chat-grid grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="communication-chat-column lg:col-span-12 flex flex-col gap-4">
+          <div className="messenger-workspace">
+            <aside className="messenger-sidebar" aria-label="Conversation list">
+              <div className="messenger-sidebar-header">
+                <div><span className="communication-eyebrow">SECURE INBOX</span><h2>Conversations</h2></div>
+                <span className="messenger-online-count"><i />{people.filter((person) => person.online).length} online</span>
+              </div>
+              <button type="button" className="messenger-new-group" onClick={() => { setShowGroupModal(true); setCommunicationError(''); }}><span className="material-symbols-outlined">group_add</span><span><strong>New group chat</strong><small>Start a shared secure channel</small></span><span className="material-symbols-outlined">add</span></button>
+              <div className="messenger-filters" role="tablist" aria-label="Conversation filters">
+                {([['all', 'All'], ['residence', 'Residents'], ['admin', 'Admins']] as const).map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={peopleFilter === value} onClick={() => { setPeoplePage(1); setPeopleFilter(value); }}>{label}</button>)}
+              </div>
+              <div className="messenger-list">
+                {visiblePeople.filter((person) => String(person.user_id) !== currentUserId).map((person) => <button type="button" key={person.user_id} className={`messenger-list-item ${String(selectedPerson?.user_id) === String(person.user_id) ? 'active' : ''}`} onClick={() => openCommunication(person)}><span className="communication-avatar"><span>{personInitials(person)}</span><i className={person.online ? 'online' : ''} /></span><span className="messenger-list-copy"><strong>{person.full_name || person.email}</strong><small>{person.online ? 'Online now' : 'Offline'} · {person.role === 'ADMIN' ? 'Administrator' : person.residence || 'Resident'}</small></span>{Number(person.unread_count || 0) > 0 && <b className="messenger-unread">{person.unread_count}</b>}</button>)}
+                {visibleVisitors.map((visitor) => <button type="button" key={visitor.user_id} className={`messenger-list-item ${String(selectedPerson?.user_id) === String(visitor.user_id) ? 'active' : ''}`} onClick={() => openCommunication(visitor)}><span className="communication-avatar"><span>{personInitials(visitor)}</span><i className={visitor.online ? 'online' : ''} /></span><span className="messenger-list-copy"><strong>{visitor.full_name || 'Unnamed visitor'}</strong><small>{visitor.online ? 'Online now' : 'Visitor intake'}</small></span>{Number(visitor.unread_count || 0) > 0 && <b className="messenger-unread">{visitor.unread_count}</b>}</button>)}
+                {visibleGroups.map((group) => <button type="button" key={group.group_id} className={`messenger-list-item ${String(selectedGroup?.group_id) === String(group.group_id) ? 'active' : ''}`} onClick={() => openGroup(group)}><span className="communication-group-icon"><span className="material-symbols-outlined">groups</span></span><span className="messenger-list-copy"><strong>{group.group_name}</strong><small>{group.member_count || group.member_user_ids?.length || 0} members · Group</small></span></button>)}
+                {!people.length && !visitors.length && !groupChats.length && <p className="communication-empty">No conversations yet.</p>}
+              </div>
+              <div className="messenger-pagination">
+                <span>{people.length + visitors.length + groupChats.length} conversations</span>
+                <div><button type="button" onClick={() => { setPeoplePage((page) => Math.max(1, page - 1)); setVisitorPage((page) => Math.max(1, page - 1)); setGroupPage((page) => Math.max(1, page - 1)); }} disabled={peoplePage === 1} aria-label="Previous conversations"><span className="material-symbols-outlined">chevron_left</span></button><strong>{peoplePage} / {Math.max(peoplePageCount, visitorPageCount, groupPageCount)}</strong><button type="button" onClick={() => { const lastPage = Math.max(peoplePageCount, visitorPageCount, groupPageCount); setPeoplePage((page) => Math.min(lastPage, page + 1)); setVisitorPage((page) => Math.min(lastPage, page + 1)); setGroupPage((page) => Math.min(lastPage, page + 1)); }} disabled={peoplePage >= Math.max(peoplePageCount, visitorPageCount, groupPageCount)} aria-label="Next conversations"><span className="material-symbols-outlined">chevron_right</span></button></div>
+              </div>
+            </aside>
+            <section className="messenger-thread-panel" aria-label="Active conversation">
+              {(selectedPerson || selectedGroup) ? <>
+                <header className="messenger-thread-header">
+                  <div className={selectedGroup ? 'communication-group-icon' : 'communication-avatar large'}>{selectedGroup ? <span className="material-symbols-outlined">groups</span> : <><span>{personInitials(selectedPerson as PresenceUser)}</span><i className={(selectedPerson as PresenceUser).online ? 'online' : ''} /></>}</div>
+                  <div><h2>{selectedGroup ? selectedGroup.group_name : selectedPerson?.full_name || selectedPerson?.email}</h2><p>{selectedGroup ? `${selectedGroup.member_count || selectedGroup.member_user_ids?.length || 0} members · Shared secure channel` : selectedPerson?.online ? 'Online now · Secure conversation' : 'Conversation history'}</p></div>
+                  <button type="button" className="messenger-thread-close" onClick={() => { setSelectedPerson(null); setSelectedGroup(null); }} aria-label="Close conversation"><span className="material-symbols-outlined">close</span></button>
+                </header>
+                <div className="messenger-messages" aria-live="polite">
+                  {selectedGroup ? <>{groupLoading && <p className="communication-empty">Loading messages...</p>}{!groupLoading && !groupMessages.length && <p className="communication-empty">Start the group conversation.</p>}{!groupLoading && groupMessages.map((message) => <div key={message.message_id} className={`communication-bubble ${message.is_mine ? 'outgoing' : 'incoming'}`}><span>{message.message}</span><small>{message.sender_name || (message.is_mine ? 'You' : 'Member')} · {formatTime(message.created_at)}</small></div>)}</> : <>{communicationLoading && <p className="communication-empty">Loading messages...</p>}{!communicationLoading && !communicationMessages.length && <p className="communication-empty">Start a secure conversation.</p>}{!communicationLoading && communicationMessages.map((message) => <div key={message.message_id} className={`communication-bubble ${message.is_mine ? 'outgoing' : 'incoming'}`}><span>{message.message && <span>{message.message}</span>}{renderAttachment(message)}</span><small>{formatTime(message.created_at)}</small></div>)}</>}
+                  <div ref={selectedGroup ? groupEndRef : communicationEndRef} />
+                </div>
+                {communicationError && <p className="communication-error modal-error">{communicationError}</p>}
+                {selectedGroup ? <form className="messenger-composer" onSubmit={sendGroupCommunication}><input value={groupDraft} onChange={(event) => setGroupDraft(event.target.value)} maxLength={2000} placeholder="Write a group message..." /><button type="submit" disabled={!groupDraft.trim()} aria-label="Send message"><span className="material-symbols-outlined">send</span></button></form> : <form className="messenger-composer" onSubmit={sendCommunication}><label className="communication-attach-button" aria-label="Attach a file" title="Attach a file"><input type="file" accept="image/*,video/*,audio/*,.pdf,.txt,.zip,.doc,.docx,.xls,.xlsx" onChange={handleCommunicationAttachment} /><span className="material-symbols-outlined">attach_file</span></label><input value={communicationDraft} onChange={(event) => setCommunicationDraft(event.target.value)} maxLength={2000} placeholder="Write a secure message..." /><button type="submit" disabled={!communicationDraft.trim() && !communicationAttachment} aria-label="Send message"><span className="material-symbols-outlined">send</span></button></form>}
+              </> : <div className="messenger-empty-state"><span className="material-symbols-outlined">forum</span><h2>Select a conversation</h2><p>Choose a person, visitor, or group from the inbox to start messaging.</p></div>}
+            </section>
+          </div>
+
+          <div className="communication-presence-panel legacy-communication-list">
               <div className="communication-presence-heading">
                 <div>
                   <span className="communication-eyebrow">PEOPLE ONLINE</span>
@@ -788,7 +831,7 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({ onUnlockDoor }) => {
         </div>}
       </div>
 
-      {selectedGroup && (
+      {!useMessengerWorkspace && selectedGroup && (
         <div className="communication-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedGroup(null); }}>
           <section className="communication-modal" role="dialog" aria-modal="true" aria-labelledby="group-chat-title" onMouseDown={(event) => event.stopPropagation()}>
             <header className="communication-modal-header">
@@ -809,7 +852,7 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({ onUnlockDoor }) => {
         </div>
       )}
 
-      {selectedPerson && (
+      {!useMessengerWorkspace && selectedPerson && (
         <div className="communication-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedPerson(null); }}>
           <section className="communication-modal" role="dialog" aria-modal="true" aria-labelledby="communication-title" onMouseDown={(event) => event.stopPropagation()}>
             <header className="communication-modal-header">

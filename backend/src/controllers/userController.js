@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
-const { getUserByEmail, listRecords, insertRecord, updateRecord, syncUserAccount } = require('../services/convexData');
+const { getUserByEmail, updateUserProfile, listRecords, insertRecord, updateRecord, syncUserAccount } = require('../services/convexData');
 const { recordActivity } = require('../services/activityLog');
 
 async function create(req, res, next) {
@@ -64,14 +64,9 @@ async function updateSelf(req, res, next) {
     if (!fullName || !email || !residence) return res.status(400).json({ error: 'Full name, email, and residence are required.' });
     if (phone && !/^\d+$/.test(phone)) return res.status(400).json({ error: 'Phone number must contain numbers only.' });
 
-    const currentId = String(req.user?.user_id || '');
-    const users = await listRecords('users', { limit: 1000 });
-    const duplicate = users.find((item) => String(item.email || '').toLowerCase() === email && String(item._legacy_id) !== currentId);
-    if (duplicate) return res.status(409).json({ error: 'That email address is already in use.' });
-    const account = users.find((item) => String(item._legacy_id) === currentId || String(item.email || '').toLowerCase() === String(req.user?.email || '').toLowerCase());
-    if (!account) return res.status(404).json({ error: 'User account not found.' });
-    const updated = await updateRecord('users', account._legacy_id, { full_name: fullName, email, phone: phone || null, residence });
-    await syncUserAccount(updated);
+    const currentEmail = String(req.user?.email || '').trim().toLowerCase();
+    const updated = await updateUserProfile(currentEmail, { full_name: fullName, email, phone, residence });
+    if (!updated) return res.status(404).json({ error: 'User account not found.' });
     await recordActivity({ req, actor: updated, result: 'PROFILE_UPDATED', reason: `User updated profile details for ${email}` });
     return res.json(updated);
   } catch (error) {
@@ -114,10 +109,16 @@ async function changeSelfPassword(req, res, next) {
       return res.status(400).json({ error: 'Your new password must be different from the current password.' });
     }
 
-    const identity = String(req.user?.user_id || req.user?.email || '').trim();
-    const account = identity.includes('@')
-      ? (await getUserByEmail(identity)).user
-      : (await listRecords('users', { limit: 1000 })).find((item) => String(item._legacy_id) === identity);
+    // The JWT can contain a legacy user ID that differs from the Convex
+    // account identifier. Resolve by the signed-in email first, then use the
+    // legacy ID only as a compatibility fallback for older sessions.
+    const identityEmail = String(req.user?.email || '').trim().toLowerCase();
+    const identityId = String(req.user?.user_id || '').trim();
+    const emailResult = identityEmail ? await getUserByEmail(identityEmail) : { user: null };
+    const account = emailResult.user || (await listRecords('users', { limit: 1000 })).find((item) =>
+      String(item._legacy_id || item.user_id || '') === identityId
+      || String(item.email || '').toLowerCase() === identityEmail
+    );
     const storedPassword = account?.password_hash || account?.password;
     const validCurrentPassword = account && storedPassword
       ? await bcrypt.compare(currentPassword, storedPassword)

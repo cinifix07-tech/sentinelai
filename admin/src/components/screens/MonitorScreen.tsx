@@ -273,7 +273,7 @@ export const MonitorScreen: React.FC<MonitorScreenProps> = ({ onNavigate }) => {
                   <span className="w-1.5 h-1.5 rounded-full bg-primary" /> LIVE
                 </span>
               </div>
-              <p className="text-[10px] text-on-surface-variant mt-0.5">PostgreSQL telemetry · 5 per page</p>
+              <p className="text-[10px] text-on-surface-variant mt-0.5">Convex telemetry · 5 per page</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-[11px] text-on-surface-variant shrink-0">

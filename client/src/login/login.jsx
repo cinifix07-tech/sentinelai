@@ -16,6 +16,7 @@ export default function Login({ onAuthenticated }) {
   const [visitorStatus, setVisitorStatus] = useState('')
   const [visitorError, setVisitorError] = useState('')
   const [visitorSession, setVisitorSession] = useState(null)
+  const [selectedVisitorAdmin, setSelectedVisitorAdmin] = useState(null)
   const [visitorMessages, setVisitorMessages] = useState([])
   const [visitorDraft, setVisitorDraft] = useState('')
   const [visitorAttachment, setVisitorAttachment] = useState(null)
@@ -63,7 +64,8 @@ export default function Login({ onAuthenticated }) {
     try {
       const created = await apiPost('/communicate/visitor-intake', visitorForm)
       setVisitorSession(created)
-      setVisitorMessages([created])
+      setSelectedVisitorAdmin(created.admins?.[0] || { user_id: created.admin_user_id, full_name: created.admin_name, online: true })
+      setVisitorMessages(created.message ? [created.message] : [])
       setVisitorForm({ name: '', purpose: '' })
     } catch (error) {
       setVisitorError(error.message || 'Unable to contact the administrator.')
@@ -95,6 +97,7 @@ export default function Login({ onAuthenticated }) {
     try {
       const created = await apiPost('/communicate/visitor-messages', {
         visitor_id: visitorSession.visitor_id,
+        admin_user_id: selectedVisitorAdmin?.user_id || visitorSession.admin_user_id,
         message,
         attachment_data: visitorAttachment?.data || '',
         attachment_name: visitorAttachment?.name || '',
@@ -203,7 +206,8 @@ export default function Login({ onAuthenticated }) {
             </form>
             <small className="login-chat-footer">Your visitor details are stored in the secure communication channel.</small>
           </> : <>
-            <div className="visitor-chat-contact"><span className="login-chat-mark"><Icon name="shield" /></span><div><strong>{visitorSession.admin_name || 'Administrator'}</strong><small>Secure administrator channel · Online</small></div><span className="visitor-online-dot" /></div>
+            <div className="visitor-chat-admins"><span className="login-chat-label">ONLINE ADMINISTRATORS</span><div className="visitor-chat-admin-list">{(visitorSession.admins || []).map((admin) => <button type="button" key={admin.user_id} className={String(selectedVisitorAdmin?.user_id) === String(admin.user_id) ? 'active' : ''} onClick={() => setSelectedVisitorAdmin(admin)}><span className="visitor-admin-avatar">{(admin.full_name || admin.email || 'A').slice(0, 2).toUpperCase()}<i className="online" /></span><span><strong>{admin.full_name || admin.email}</strong><small>Online now · Administrator</small></span></button>)}</div></div>
+            <div className="visitor-chat-contact"><span className="login-chat-mark"><Icon name="shield" /></span><div><strong>{selectedVisitorAdmin?.full_name || visitorSession.admin_name || 'Administrator'}</strong><small>Secure administrator channel · Online</small></div><span className="visitor-online-dot" /></div>
             <div className="visitor-chat-thread" aria-live="polite">
               {visitorMessages.map((item) => <div key={item.message_id} className={`visitor-chat-bubble ${String(item.sender_user_id) === String(visitorSession.visitor_id) ? 'outgoing' : 'incoming'}`}>{item.message && <span>{item.message}</span>}{renderVisitorAttachment(item)}<small>{new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small></div>)}
               <div ref={visitorEndRef} />

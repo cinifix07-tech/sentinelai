@@ -37,6 +37,14 @@ async function updateUserPassword(email, passwordHash) {
   });
 }
 
+async function updateUserProfile(currentEmail, patch) {
+  const result = await convexRequest('/app/users/profile', {
+    method: 'POST',
+    body: JSON.stringify({ current_email: currentEmail, patch }),
+  });
+  return result.user;
+}
+
 async function syncUserAccount(payload) {
   const result = await convexRequest('/app/users/sync', { method: 'POST', body: JSON.stringify({ payload }) });
   return result.account;
@@ -67,4 +75,4 @@ async function deleteRecord(table, id, idField = 'id') {
   return result.record || null;
 }
 
-module.exports = { convexRequest, getUserByEmail, updateUserPassword, syncUserAccount, listRecords, findRecord, insertRecord, updateRecord, deleteRecord };
+module.exports = { convexRequest, getUserByEmail, updateUserPassword, updateUserProfile, syncUserAccount, listRecords, findRecord, insertRecord, updateRecord, deleteRecord };

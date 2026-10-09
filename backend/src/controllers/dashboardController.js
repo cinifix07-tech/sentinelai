@@ -5,10 +5,15 @@ async function clientTelemetry() {
   const token = process.env.IOT_DEVICE_API_KEY;
   const site = process.env.CONVEX_SITE_URL || 'https://elated-eel-973.convex.site';
   if (!token) return null;
-  const response = await fetch(`${site}/iot/latest?device_code=esp32-porch-01`, { headers: { 'x-device-key': token } });
-  if (!response.ok) return null;
-  const body = await response.json();
-  if (!body.device) return { devices: [], readings: [] };
+  const headers = { 'x-device-key': token };
+  const [latestResponse, activityResponse] = await Promise.all([
+    fetch(`${site}/iot/latest?device_code=esp32-porch-01`, { headers }),
+    fetch(`${site}/iot/activity?limit=5000`, { headers }),
+  ]);
+  if (!latestResponse.ok) return null;
+  const body = await latestResponse.json();
+  const activityBody = activityResponse.ok ? await activityResponse.json() : { events: [] };
+  if (!body.device) return { devices: [], readings: [], sensorEvents: activityBody.events || [] };
   return {
     devices: [{
       device_id: body.device._id,
@@ -26,6 +31,7 @@ async function clientTelemetry() {
       audio_level: body.reading.audioLevel,
       created_at: new Date(body.reading.recordedAt).toISOString(),
     }] : [],
+    sensorEvents: activityBody.events || [],
   };
 }
 
@@ -37,6 +43,7 @@ async function dashboard(req, res, next) {
       return res.json({
         devices: telemetry?.devices || [],
         latestReadings: telemetry?.readings || [],
+        sensorEvents: telemetry?.sensorEvents || [],
         sessions: [],
         voiceInteractions: [],
         alerts: [],

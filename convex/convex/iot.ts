@@ -7,7 +7,10 @@ function requireDeviceToken(token: string) {
 }
 
 function requireBackendControlToken(token: string) {
-  const expected = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.BACKEND_CONTROL_TOKEN;
+  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
+  // Production currently names this shared secret CONVEX_CONTROL_TOKEN;
+  // retain BACKEND_CONTROL_TOKEN for older local deployments.
+  const expected = env.BACKEND_CONTROL_TOKEN || env.CONVEX_CONTROL_TOKEN;
   if (!expected || token !== expected) throw new Error("Invalid backend control token");
 }
 
@@ -66,6 +69,34 @@ export const activity = query({
   },
 });
 
+export const readings = query({
+  args: { token: v.string(), deviceCode: v.optional(v.string()), limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    requireDeviceToken(args.token);
+    const limit = Math.min(Math.max(args.limit ?? 100, 1), 5000);
+    const deviceCode = args.deviceCode;
+    const rows = deviceCode
+      ? await ctx.db.query("iotSensorReadings").withIndex("by_device_time", (q) => q.eq("deviceCode", deviceCode)).order("desc").take(limit)
+      : await ctx.db.query("iotSensorReadings").withIndex("by_device_time").order("desc").take(limit);
+    return {
+      readings: rows.map((reading) => ({
+        id: reading._id,
+        reading_id: reading._id,
+        device_id: reading.deviceCode,
+        device_code: reading.deviceCode,
+        device_name: reading.deviceName,
+        location: reading.location,
+        device_type: reading.deviceType,
+        motion_detected: reading.motionDetected,
+        audio_detected: reading.audioDetected,
+        audio_level: reading.audioLevel,
+        recorded_at: new Date(reading.recordedAt).toISOString(),
+        created_at: new Date(reading.recordedAt).toISOString(),
+      })),
+    };
+  },
+});
+
 export const mode = query({
   args: { token: v.string() },
   handler: async (ctx, args) => { requireDeviceToken(args.token); return { state: await readState(ctx) }; },
@@ -80,10 +111,11 @@ export const setMode = mutation({
   handler: async (ctx, args) => {
     requireBackendControlToken(args.controlToken);
     const current = await readState(ctx);
+    const lockdownActive = args.mode === "disarm" ? false : (args.lockdownActive ?? current.lockdownActive);
     const state = {
       stateId: 1,
       mode: args.mode,
-      lockdownActive: args.lockdownActive ?? current.lockdownActive,
+      lockdownActive,
       updatedAt: Date.now(),
     };
     const existing = await ctx.db.query("iotSecurityState").withIndex("by_state", (q) => q.eq("stateId", 1)).unique();

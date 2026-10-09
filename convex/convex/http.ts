@@ -126,6 +126,25 @@ http.route({
 });
 
 http.route({
+  path: "/app/users/profile",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!backendAuthorized(request)) return unauthorized();
+    const body = await request.json();
+    try {
+      const user = await ctx.runMutation(internal.appData.updateUserProfile, {
+        currentEmail: String(body.current_email || ""),
+        patch: body.patch || {},
+      });
+      if (!user) return Response.json({ error: "User account not found." }, { status: 404 });
+      return Response.json({ user });
+    } catch (error) {
+      return Response.json({ error: error instanceof Error ? error.message : "Unable to update profile." }, { status: 400 });
+    }
+  }),
+});
+
+http.route({
   path: "/app/users/sync",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
@@ -178,6 +197,18 @@ http.route({
     const limit = Number(url.searchParams.get("limit") || 100);
     const events = await ctx.runQuery(api.iot.activity, { token: deviceToken(request), limit });
     return Response.json({ ok: true, events });
+  }),
+});
+
+http.route({
+  path: "/iot/readings",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const limit = Number(url.searchParams.get("limit") || 100);
+    const deviceCode = url.searchParams.get("device_code") || undefined;
+    const result = await ctx.runQuery(api.iot.readings, { token: deviceToken(request), deviceCode, limit });
+    return Response.json({ ok: true, ...result });
   }),
 });
 

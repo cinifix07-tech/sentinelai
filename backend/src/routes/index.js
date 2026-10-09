@@ -5,7 +5,10 @@ router.get('/health', (req, res) => res.json({ ok: true, service: 'smart-home-se
 
 router.use('/auth', require('./authRoutes'));
 router.use('/iot', require('./iotRoutes'));
-router.use('/users', authenticate, requireAdmin, require('./userRoutes'));
+// The signed-in account may update its own profile and password. The user
+// router applies requireAdmin only to list, create, and other account-admin
+// operations so client accounts are not blocked from self-service settings.
+router.use('/users', authenticate, require('./userRoutes'));
 router.use('/devices', authenticate, requireAdmin, require('./deviceRoutes'));
 router.use('/security', authenticate, requireAdmin, require('./securityRoutes'));
 router.use('/interview', authenticate, requireAdmin, require('./interviewRoutes'));

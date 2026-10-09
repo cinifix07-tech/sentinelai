@@ -9,6 +9,7 @@
     "start": "node src/server.js",
     "seed:admin": "node src/services/seedUsers.js",
     "bootstrap:convex-admin": "node scripts/bootstrapConvexAdmin.js",
+    "reset:convex-password": "node scripts/resetConvexPassword.js",
     "import:sql-convex": "node scripts/importSqlDumpToConvex.js"
   },
   "dependencies": {

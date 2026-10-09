@@ -415,6 +415,18 @@ async function convexPeople(req, res, next) {
     const filter = String(req.query.filter || 'all').toLowerCase();
     let people = await convexRows('users', 'full_name');
     people = people.filter((user) => user.is_active !== false && (filter === 'all' || (filter === 'admin' && String(user.role).toUpperCase() === 'ADMIN') || (filter === 'residence' && String(user.role).toUpperCase() === 'USER')));
+    if (filter === 'all') {
+      const visitors = await convexRows('communication_visitors', 'created_at');
+      people = people.concat(visitors.map((visitor) => ({
+        user_id: visitor.visitor_id,
+        full_name: visitor.full_name,
+        email: '',
+        role: 'VISITOR',
+        residence: 'Visitor intake',
+        is_active: true,
+        last_seen_at: visitor.last_seen_at || visitor.created_at,
+      })));
+    }
     const messages = await convexRows('communication_messages', 'created_at');
     res.json(people.map((user) => {
       const id = String(user.user_id || user._legacy_id || user.email);
@@ -436,12 +448,19 @@ async function convexHeartbeat(req, res, next) {
   } catch (error) { next(error); }
 }
 
+async function convexIdentity(req) {
+  const requested = String(req.user.user_id || req.user.email);
+  const users = await convexRows('users', 'full_name');
+  const user = users.find((item) => String(item.user_id || item._legacy_id || item.email) === requested || String(item.email || '').toLowerCase() === requested.toLowerCase());
+  return String(user?.user_id || user?._legacy_id || user?.email || requested);
+}
+
 async function convexListMessages(req, res, next) {
   try {
-    const current = String(req.user.user_id || req.user.email);
+    const current = await convexIdentity(req);
     const participant = String(req.params.userId || '');
     const messages = await convexRows('communication_messages', 'created_at');
-    res.json(messages.filter((message) => (String(message.sender_user_id) === current && String(message.recipient_user_id) === participant) || (String(message.sender_user_id) === participant && String(message.recipient_user_id) === current)).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))).slice(-300));
+    res.json(messages.filter((message) => (String(message.sender_user_id) === current && String(message.recipient_user_id) === participant) || (String(message.sender_user_id) === participant && String(message.recipient_user_id) === current)).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))).slice(-300).map((message) => ({ ...message, is_mine: String(message.sender_user_id) === current })));
   } catch (error) { next(error); }
 }
 
@@ -451,8 +470,8 @@ async function convexSendMessage(req, res, next) {
     const message = String(req.body?.message || '').trim();
     if (!recipient || !message) return res.status(400).json({ error: 'Recipient and message are required.' });
     const id = `message:${randomUUID()}`;
-    const row = { message_id: id, sender_user_id: String(req.user.user_id || req.user.email), recipient_user_id: recipient, message, created_at: new Date().toISOString(), read_at: null, attachment_data: req.body?.attachment_data || null, attachment_name: req.body?.attachment_name || null, attachment_type: req.body?.attachment_type || null, attachment_size: req.body?.attachment_size || null };
-    res.status(201).json(await insertRecord('communication_messages', id, row));
+    const row = { message_id: id, sender_user_id: await convexIdentity(req), recipient_user_id: recipient, message, created_at: new Date().toISOString(), read_at: null, attachment_data: req.body?.attachment_data || null, attachment_name: req.body?.attachment_name || null, attachment_type: req.body?.attachment_type || null, attachment_size: req.body?.attachment_size || null };
+    res.status(201).json({ ...(await insertRecord('communication_messages', id, row)), is_mine: true });
   } catch (error) { next(error); }
 }
 
@@ -513,8 +532,9 @@ async function convexDeleteGroup(req, res, next) {
 async function convexListGroupMessages(req, res, next) {
   try {
     const groupId = String(req.params.groupId || '');
+    const current = await convexIdentity(req);
     const messages = await convexRows('communication_group_messages', 'created_at');
-    res.json(messages.filter((message) => String(message.group_id) === groupId).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))).slice(-300));
+    res.json(messages.filter((message) => String(message.group_id) === groupId).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))).slice(-300).map((message) => ({ ...message, is_mine: String(message.sender_user_id) === current })));
   } catch (error) { next(error); }
 }
 
@@ -524,7 +544,7 @@ async function convexSendGroupMessage(req, res, next) {
     const message = String(req.body?.message || '').trim();
     if (!groupId || !message) return res.status(400).json({ error: 'Group and message are required.' });
     const id = `group-message:${randomUUID()}`;
-    res.status(201).json(await insertRecord('communication_group_messages', id, { message_id: id, group_id: groupId, sender_user_id: String(req.user.user_id || req.user.email), message, created_at: new Date().toISOString() }));
+    res.status(201).json({ ...(await insertRecord('communication_group_messages', id, { message_id: id, group_id: groupId, sender_user_id: await convexIdentity(req), message, created_at: new Date().toISOString() })), is_mine: true });
   } catch (error) { next(error); }
 }
 
@@ -533,16 +553,22 @@ async function convexVisitorIntake(req, res, next) {
     const fullName = String(req.body?.full_name || req.body?.name || '').trim();
     const purpose = String(req.body?.purpose || '').trim();
     if (!fullName || !purpose) return res.status(400).json({ error: 'Name and purpose are required.' });
-    const admins = (await convexRows('users', 'full_name')).filter((user) => String(user.role).toUpperCase() === 'ADMIN' && user.is_active !== false);
+    const now = Date.now();
+    const admins = (await convexRows('users', 'full_name'))
+      .filter((user) => String(user.role).toUpperCase() === 'ADMIN' && user.is_active !== false)
+      .filter((user) => user.last_seen_at && now - Date.parse(user.last_seen_at) < 120000);
     const admin = admins[0];
-    if (!admin) return res.status(503).json({ error: 'No administrator is available right now.' });
+    if (!admin) return res.status(503).json({ error: 'No administrator is online right now.' });
     const visitorId = `visitor:${randomUUID()}`;
     const createdAt = new Date().toISOString();
-    await insertRecord('communication_visitors', visitorId, { visitor_id: visitorId, full_name: fullName, purpose, admin_user_id: String(admin.user_id || admin.email), created_at: createdAt, last_seen_at: createdAt });
-    const messageId = `message:${randomUUID()}`;
+    const adminIds = admins.map((item) => String(item.user_id || item.email));
+    await insertRecord('communication_visitors', visitorId, { visitor_id: visitorId, full_name: fullName, purpose, admin_user_id: adminIds[0], admin_user_ids: adminIds, created_at: createdAt, last_seen_at: createdAt });
     const message = `New visitor intake\nName: ${fullName}\nPurpose: ${purpose}`;
-    const saved = await insertRecord('communication_messages', messageId, { message_id: messageId, sender_user_id: visitorId, recipient_user_id: String(admin.user_id || admin.email), message, created_at: createdAt, read_at: null });
-    res.status(201).json({ visitor_id: visitorId, message: saved });
+    const savedMessages = await Promise.all(adminIds.map((adminId) => {
+      const messageId = `message:${randomUUID()}`;
+      return insertRecord('communication_messages', messageId, { message_id: messageId, sender_user_id: visitorId, recipient_user_id: adminId, message, created_at: createdAt, read_at: null });
+    }));
+    res.status(201).json({ visitor_id: visitorId, message: savedMessages[0], admin_user_id: adminIds[0], admin_name: admin.full_name || admin.email, admins: admins.map((item) => ({ user_id: String(item.user_id || item.email), full_name: item.full_name || item.email, email: item.email, online: true })) });
   } catch (error) { next(error); }
 }
 
@@ -553,7 +579,8 @@ async function convexVisitorMessages(req, res, next) {
     const visitor = visitors.find((item) => String(item.visitor_id) === visitorId);
     if (!visitor) return res.status(404).json({ error: 'Visitor conversation not found.' });
     const messages = await convexRows('communication_messages', 'created_at');
-    res.json(messages.filter((item) => (String(item.sender_user_id) === visitorId && String(item.recipient_user_id) === String(visitor.admin_user_id)) || (String(item.sender_user_id) === String(visitor.admin_user_id) && String(item.recipient_user_id) === visitorId)).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))));
+    const adminIds = Array.isArray(visitor.admin_user_ids) && visitor.admin_user_ids.length ? visitor.admin_user_ids.map(String) : [String(visitor.admin_user_id)];
+    res.json(messages.filter((item) => (String(item.sender_user_id) === visitorId && adminIds.includes(String(item.recipient_user_id))) || (adminIds.includes(String(item.sender_user_id)) && String(item.recipient_user_id) === visitorId)).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))));
   } catch (error) { next(error); }
 }
 
@@ -565,8 +592,11 @@ async function convexSendVisitorMessage(req, res, next) {
     const visitors = await convexRows('communication_visitors', 'created_at');
     const visitor = visitors.find((item) => String(item.visitor_id) === visitorId);
     if (!visitor) return res.status(404).json({ error: 'Visitor conversation not found.' });
+    const adminIds = Array.isArray(visitor.admin_user_ids) && visitor.admin_user_ids.length ? visitor.admin_user_ids.map(String) : [String(visitor.admin_user_id)];
+    const recipientId = String(req.body?.admin_user_id || adminIds[0]);
+    if (!adminIds.includes(recipientId)) return res.status(403).json({ error: 'That administrator is not part of this conversation.' });
     const id = `message:${randomUUID()}`;
-    res.status(201).json(await insertRecord('communication_messages', id, { message_id: id, sender_user_id: visitorId, recipient_user_id: String(visitor.admin_user_id), message, created_at: new Date().toISOString(), read_at: null }));
+    res.status(201).json(await insertRecord('communication_messages', id, { message_id: id, sender_user_id: visitorId, recipient_user_id: recipientId, message, created_at: new Date().toISOString(), read_at: null }));
   } catch (error) { next(error); }
 }
 

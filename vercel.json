@@ -12,7 +12,7 @@
           "destination": "/"
         },
         {
-          "source": "/admin/(home|monitor|intercom|visitors|settings|login)",
+          "source": "/admin/(home|monitor|voice|intercom|visitors|settings|login)",
           "destination": "/"
         },
         {

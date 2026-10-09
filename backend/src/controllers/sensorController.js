@@ -1,6 +1,17 @@
 const table = require('../models/table');
-const { listRecords } = require('../services/convexData');
 const socket = require('../socket');
+
+const convexReadings = async (deviceCode, limit = 100) => {
+  const baseUrl = String(process.env.CONVEX_SITE_URL || '').replace(/\/$/, '');
+  if (!baseUrl) throw new Error('CONVEX_SITE_URL is not configured');
+  const url = new URL(`${baseUrl}/iot/readings`);
+  if (deviceCode) url.searchParams.set('device_code', deviceCode);
+  url.searchParams.set('limit', String(limit));
+  const response = await fetch(url, { headers: { 'x-device-key': process.env.IOT_DEVICE_API_KEY || '' } });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error || `Convex readings request failed (${response.status})`);
+  return Array.isArray(body.readings) ? body.readings : [];
+};
 
 async function createReading(req, res, next) {
   try {
@@ -15,10 +26,10 @@ async function createReading(req, res, next) {
 
 async function latest(req, res, next) {
   try {
-    const rows = await listRecords('sensor_readings', { order: 'recorded_at', limit: 1000 });
-    const row = rows.find((item) => String(item.device_id) === String(req.params.device_id) || String(item.device_code) === String(req.params.device_id));
+    const rows = await convexReadings(req.params.device_id, 1);
+    const row = rows[0];
     if (!row) return res.status(404).json({ error: 'No readings found for device' });
-    res.json({ ...row, created_at: row.recorded_at || row.created_at });
+    res.json(row);
   } catch (error) { next(error); }
 }
 
@@ -27,17 +38,13 @@ async function listReadings(req, res, next) {
     const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
     const pageSize = 5;
     const deviceId = String(req.query.device_id || '').trim();
-    let rows = await listRecords('sensor_readings', { order: 'recorded_at', limit: 1000 });
-    if (deviceId) rows = rows.filter((row) => String(row.device_id) === deviceId || String(row.device_code) === deviceId);
+    const rows = await convexReadings(deviceId || undefined, 5000);
     const total = rows.length;
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
     const currentPage = Math.min(page, totalPages);
     const offset = (currentPage - 1) * pageSize;
 
-    const pageRows = rows.slice(offset, offset + pageSize).map((row) => ({
-      ...row,
-      created_at: row.recorded_at || row.created_at,
-    }));
+    const pageRows = rows.slice(offset, offset + pageSize);
 
     return res.json({
       readings: pageRows,

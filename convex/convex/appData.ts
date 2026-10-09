@@ -144,6 +144,66 @@ export const updateUserPassword = internalMutation({
   },
 });
 
+export const updateUserProfile = internalMutation({
+  args: { currentEmail: v.string(), patch: v.any() },
+  handler: async (ctx, args) => {
+    const currentEmail = args.currentEmail.trim().toLowerCase();
+    const patch = args.patch as Record<string, unknown>;
+    const nextEmail = String(patch.email || currentEmail).trim().toLowerCase();
+    const account = await ctx.db.query("userAccounts").withIndex("by_email", (q) => q.eq("email", currentEmail)).unique();
+    if (!account) return null;
+    const duplicate = await ctx.db.query("userAccounts").withIndex("by_email", (q) => q.eq("email", nextEmail)).unique();
+    if (duplicate && duplicate._id !== account._id) throw new Error("That email address is already in use.");
+
+    const firstName = String(patch.first_name || account.firstName || account.fullName.split(" ")[0] || "").trim();
+    const lastName = String(patch.last_name || account.lastName || account.fullName.split(" ").slice(1).join(" ") || "").trim();
+    const nextAccount = {
+      fullName: String(patch.full_name || account.fullName),
+      email: nextEmail,
+      firstName,
+      lastName,
+      username: nextEmail,
+      residence: String(patch.residence || account.residence || ""),
+      ...(patch.phone ? { phone: String(patch.phone) } : { phone: account.phone }),
+    };
+    await ctx.db.patch(account._id, nextAccount);
+
+    const records = await ctx.db.query("legacyRecords").withIndex("by_table", (q) => q.eq("tableName", "users")).collect();
+    const record = records.find((item) => {
+      const payload = item.payload as Record<string, unknown>;
+      return String(payload.email || "").toLowerCase() === currentEmail || String(payload.user_id || "") === account.legacyUserId;
+    });
+    if (record) {
+      const payload = record.payload as Record<string, unknown>;
+      await ctx.db.patch(record._id, {
+        payload: { ...payload, ...{
+          full_name: nextAccount.fullName,
+          email: nextAccount.email,
+          username: nextAccount.username,
+          first_name: nextAccount.firstName,
+          last_name: nextAccount.lastName,
+          residence: nextAccount.residence,
+          phone: nextAccount.phone || null,
+        } },
+        importedAt: Date.now(),
+      });
+    }
+    return {
+      user_id: account.legacyUserId,
+      full_name: nextAccount.fullName,
+      email: nextAccount.email,
+      username: nextAccount.username,
+      first_name: nextAccount.firstName,
+      last_name: nextAccount.lastName,
+      residence: nextAccount.residence,
+      phone: nextAccount.phone,
+      role: account.role,
+      is_active: account.isActive,
+      _legacy_id: account.legacyUserId,
+    };
+  },
+});
+
 export const upsertUserAccount = internalMutation({
   args: { payload: v.any() },
   handler: async (ctx, args) => {

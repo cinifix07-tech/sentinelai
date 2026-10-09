@@ -162,7 +162,7 @@ export default function App() {
       disarm: 'System Disarmed: Porch radar placed in passive log mode',
     };
     try {
-      const response = await apiPost('/iot/mode', { mode });
+      const response = await apiPost('/iot/mode', { mode, ...(mode === 'disarm' ? { lockdown_active: false } : {}) });
       if (response?.state) {
         setSecurityMode(response.state.mode as SecurityMode);
         setIsLockdownActive(Boolean(response.state.lockdown_active));

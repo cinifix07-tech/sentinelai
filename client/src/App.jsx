@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import Login from './login/login'
 import Dashboard from './dashboard/dash'
 import UserSettings from './dashboard/userset'
+import Logs from './dashboard/logs'
 import { Brand, Icon } from './ui'
 import { apiGet, apiPost, apiPut, getSession } from './api'
 import { endSession, signedIn, useSaved } from './storage'
@@ -9,6 +10,7 @@ import './App.css'
 
 const links = [
   { path: '/dashboard', label: 'Overview', icon: 'grid' },
+  { path: '/logs', label: 'Logs', icon: 'list' },
   { path: '/settings', label: 'Account settings', icon: 'settings' },
 ]
 
@@ -18,6 +20,15 @@ const themes = [
   { id: 'midnight', label: 'Midnight Patrol', swatch: '#1c252e' },
   { id: 'sage', label: 'Sage Garden', swatch: '#e6eee7' },
 ]
+
+function deploymentPrefix(pathname = window.location.pathname) {
+  return pathname === '/client' || pathname.startsWith('/client/') ? '/client' : ''
+}
+
+function appPath(pathname = window.location.pathname) {
+  const prefix = deploymentPrefix(pathname)
+  return prefix ? pathname.slice(prefix.length) || '/' : pathname
+}
 
 function currentRoute() {
   return window.location.pathname + window.location.hash
@@ -271,8 +282,11 @@ export default function App() {
   const [notice, setNotice] = useState('')
 
   function navigate(path, replace = false) {
-    window.history[replace ? 'replaceState' : 'pushState']({}, '', path)
-    setRoute(path)
+    const prefix = deploymentPrefix()
+    const nextPath = prefix && !path.startsWith(prefix) ? `${prefix}${path}` : path
+    const nextRoute = `${nextPath}${window.location.hash && path === appPath() ? window.location.hash : ''}`
+    window.history[replace ? 'replaceState' : 'pushState']({}, '', nextRoute)
+    setRoute(nextRoute)
   }
 
   function logout() {
@@ -285,9 +299,9 @@ export default function App() {
     function sync() {
       const active = signedIn()
       setAuthenticated(active)
-      const path = window.location.pathname
+      const path = appPath()
       if (!active && path !== '/login') navigate('/login', true)
-      else if (active && !['/dashboard', '/settings'].includes(path)) navigate('/dashboard', true)
+      else if (active && !['/dashboard', '/logs', '/settings'].includes(path)) navigate('/dashboard', true)
       else setRoute(currentRoute())
     }
 
@@ -301,7 +315,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    document.title = `${route.startsWith('/settings') ? 'Account settings' : route.startsWith('/login') ? 'Sign in' : 'Overview'} | Sentinel AI`
+    document.title = `${route.startsWith('/settings') ? 'Account settings' : route.startsWith('/logs') ? 'Logs' : route.startsWith('/login') ? 'Sign in' : 'Overview'} | Sentinel AI`
     const anchor = route.split('#')[1]
     if (anchor) document.getElementById(anchor)?.scrollIntoView({ block: 'start' })
     else window.scrollTo(0, 0)
@@ -380,7 +394,7 @@ export default function App() {
 
       <div className="workspace">
         <header className="topbar">
-          <span className="breadcrumb">MY RESIDENCE <span>/</span> {route.startsWith('/settings') ? 'ACCOUNT' : 'OVERVIEW'}</span>
+          <span className="breadcrumb">MY RESIDENCE <span>/</span> {route.startsWith('/settings') ? 'ACCOUNT' : route.startsWith('/logs') ? 'LOGS' : 'OVERVIEW'}</span>
           <div className="topbar-right">
             <div className="theme-picker">
               <button type="button" className="theme-picker-button" aria-label="Change dashboard color theme" onClick={() => setShowThemeMenu((visible) => !visible)}>
@@ -417,7 +431,9 @@ export default function App() {
         <main id="content" tabIndex={-1}>
           {route.startsWith('/settings')
             ? <UserSettings profile={profile} onSave={setProfile} preferences={preferences} setPreferences={setPreferences} onLogout={logout} notify={setNotice} />
-            : <Dashboard profile={profile} notify={setNotice} navigate={navigate} />}
+            : route.startsWith('/logs')
+              ? <Logs />
+              : <Dashboard profile={profile} notify={setNotice} />}
         </main>
         <footer className="workspace-footer">SENTINEL AI / PERSONAL SECURITY<span>Sample telemetry - No live connection</span></footer>
       </div>
