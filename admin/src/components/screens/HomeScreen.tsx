@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AppTab, SecurityMode } from '../../types';
 import { BRAND_ASSETS } from '../../mockData';
 import { PerimeterActivityChart } from '../PerimeterActivityChart';
@@ -12,6 +12,17 @@ interface HomeScreenProps {
   onToggleLockdown: () => void;
 }
 
+interface ActivityRecord {
+  id?: string;
+  attempt_id?: string;
+  result?: string;
+  reason?: string;
+  user_name?: string;
+  user_email?: string;
+  created_at?: string;
+  attempt_time?: string;
+}
+
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   onNavigate,
   securityMode,
@@ -22,6 +33,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [pirTesting, setPirTesting] = useState(false);
   const [pirTestMessage, setPirTestMessage] = useState('Test PIR');
   const [userCount, setUserCount] = useState<number | null>(null);
+  const [devices, setDevices] = useState<Array<{ is_online?: boolean }>>([]);
+  const [activities, setActivities] = useState<ActivityRecord[]>([]);
+  const [activityLoading, setActivityLoading] = useState(true);
   const showLogsModal = false;
   const setShowLogsModal = (_open: boolean) => {};
   const events: Array<{ id: string; title: string; description: string; time: string }> = [];
@@ -29,17 +43,28 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   React.useEffect(() => {
     let active = true;
-    apiGet('/users')
-      .then((users) => {
+    const loadSummary = () => Promise.all([apiGet('/users'), apiGet('/devices'), apiGet('/access/attempts')])
+      .then(([users, deviceRows, activityRows]) => {
         if (!active) return;
         setUserCount(Array.isArray(users) ? users.length : 0);
+        setDevices(Array.isArray(deviceRows) ? deviceRows : []);
+        setActivities(Array.isArray(activityRows) ? activityRows : []);
+        setActivityLoading(false);
       })
       .catch(() => {
-        if (active) setUserCount(0);
+        if (!active) return;
+        setUserCount(0);
+        setDevices([]);
+        setActivities([]);
+        setActivityLoading(false);
       });
+
+    loadSummary();
+    const timer = window.setInterval(loadSummary, 10000);
 
     return () => {
       active = false;
+      window.clearInterval(timer);
     };
   }, []);
 
@@ -145,51 +170,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </span>
             </div>
 
-            {/* Mode Switcher */}
-            <div className="grid grid-cols-3 gap-1.5 p-1 bg-surface-container-low rounded-lg">
-              <button
-                onClick={() => onSetSecurityMode('away')}
-                className={`h-[44px] px-2 rounded-md text-[11px] flex items-center justify-center gap-1 transition-all ${
-                  securityMode === 'away'
-                    ? 'bg-surface-container-lowest text-primary shadow-sm font-semibold'
-                    : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-lowest/50'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[16px]">lock</span>
-                <span>Armed Away</span>
-              </button>
-              <button
-                onClick={() => onSetSecurityMode('home')}
-                className={`h-[44px] px-2 rounded-md text-[11px] flex items-center justify-center gap-1 transition-all ${
-                  securityMode === 'home'
-                    ? 'bg-surface-container-lowest text-primary shadow-sm font-semibold'
-                    : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-lowest/50'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[16px]">home</span>
-                <span>Armed Home</span>
-              </button>
-              <button
-                onClick={() => onSetSecurityMode('disarm')}
-                className={`h-[44px] px-2 rounded-md text-[11px] flex items-center justify-center gap-1 transition-all ${
-                  securityMode === 'disarm'
-                    ? 'bg-surface-container-lowest text-primary shadow-sm font-semibold'
-                    : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-lowest/50'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[16px]">lock_open</span>
-                <span>Disarmed</span>
-              </button>
-            </div>
           </section>
 
           {/* 4 Status Metric Cards (Responsive: 2 cols on mobile, 4 cols on sm+) */}
-          <section className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <section className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {/* Card 1: System Status */}
             <div className="bg-surface-container-lowest rounded-xl p-3 shadow-sm flex flex-col justify-between gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">
-                  System
+                  System online
                 </span>
                 <div className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center text-secondary">
                   <span className="material-symbols-outlined text-[18px]">dns</span>
@@ -201,11 +190,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </div>
             </div>
 
-            {/* Card 2: Motion Sensor */}
+            {/* Card 2: Functioning Devices */}
             <div className="bg-surface-container-lowest rounded-xl p-3 shadow-sm flex flex-col justify-between gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">
-                  PIR Sensor
+                  Devices functioning
                 </span>
                 <div className="w-7 h-7 rounded-full bg-primary-fixed flex items-center justify-center text-primary">
                   <span className="material-symbols-outlined text-[18px]">sensors</span>
@@ -213,33 +202,35 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </div>
               <div>
                 <div className={`font-display font-semibold text-base ${securityMode === 'disarm' ? 'text-on-surface-variant' : 'text-primary'}`}>
-                  {securityMode === 'disarm' ? 'PASSIVE' : securityMode === 'home' ? 'ARMED HOME' : 'ARMED AWAY'}
+                  {devices.filter((device) => device.is_online).length}
                 </div>
-                <div className="text-[12px] text-on-surface-variant mt-0.5 truncate">HC-SR501 • Porch</div>
+                <div className="text-[12px] text-on-surface-variant mt-0.5 truncate">Connected devices</div>
               </div>
             </div>
 
-            {/* Card 3: AI Guard */}
+            {/* Card 3: Offline Devices */}
             <div className="bg-surface-container-lowest rounded-xl p-3 shadow-sm flex flex-col justify-between gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">
-                  AI Guard
+                  Devices not functioning
                 </span>
                 <div className="w-7 h-7 rounded-full bg-surface-container-high flex items-center justify-center text-tertiary">
-                  <span className="material-symbols-outlined text-[18px]">smart_toy</span>
+                  <span className="material-symbols-outlined text-[18px]">warning</span>
                 </div>
               </div>
               <div>
-                <div className="font-display font-semibold text-base text-on-surface">READY</div>
-                <div className="text-[12px] text-on-surface-variant mt-0.5 truncate">Voice active</div>
+                <div className="font-display font-semibold text-base text-on-surface">
+                  {devices.filter((device) => !device.is_online).length}
+                </div>
+                <div className="text-[12px] text-on-surface-variant mt-0.5 truncate">Offline devices</div>
               </div>
             </div>
 
-            {/* Card 4: Perimeter */}
+            {/* Card 4: Users */}
             <div className="bg-surface-container-lowest rounded-xl p-3 shadow-sm flex flex-col justify-between gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">
-                  Users
+                  Number of users
                 </span>
                 <div className="w-7 h-7 rounded-full bg-primary-fixed flex items-center justify-center text-primary">
                   <span className="material-symbols-outlined text-[18px]">shield</span>
@@ -247,42 +238,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </div>
               <div>
                 <div className="font-display font-semibold text-base text-on-surface">
-                  {userCount === null ? '—' : userCount} USERS
+                  {userCount === null ? '—' : userCount}
                 </div>
                 <div className="text-[12px] text-on-surface-variant mt-0.5 truncate">Registered users</div>
               </div>
             </div>
           </section>
 
-          <section className="bg-surface-container-lowest rounded-2xl p-4 sm:p-5 shadow-[0_18px_45px_rgba(11,28,48,0.08)] border border-surface-container/60 flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-primary">Rapid Response</span>
-                <h2 className="font-display font-semibold text-base text-on-surface mt-0.5">Quick Controls</h2>
-              </div>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container text-[11px] font-bold text-primary self-start sm:self-auto">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                Secure actions armed
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
-              <button
-                onClick={onToggleLockdown}
-                className={`min-h-[54px] rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 shadow-sm transition-all duration-200 active:scale-[0.99] ${
-                  isLockdownActive
-                    ? 'bg-[#ba1a1a] text-white hover:bg-[#93000a]'
-                    : 'bg-primary text-on-primary hover:bg-primary-container'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[21px]">
-                  {isLockdownActive ? 'lock_open' : 'lock_clock'}
-                </span>
-                <span>{isLockdownActive ? 'Deactivate Porch Lockdown' : 'Instant Porch Lockdown'}</span>
-              </button>
-
-            </div>
-          </section>
+          <GeneralActivityTable activities={activities} loading={activityLoading} />
 
           {showLegacyPreviews && <>
           {/* Compact Live Motion Monitor Preview */}
@@ -457,9 +420,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
       </div>
 
-      {/* Full-width Perimeter Activity & Motion Telemetry Chart */}
-      <PerimeterActivityChart onNavigateToMonitor={() => onNavigate('monitor')} />
-
       {/* Full Event Logs Modal */}
       {showLogsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
@@ -501,3 +461,38 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     </div>
   );
 };
+
+function GeneralActivityTable({ activities, loading }: { activities: ActivityRecord[]; loading: boolean }) {
+  const [page, setPage] = useState(1);
+  const pageSize = 5;
+  const pageCount = Math.max(1, Math.ceil(activities.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const visibleActivities = useMemo(() => activities.slice((currentPage - 1) * pageSize, currentPage * pageSize), [activities, currentPage]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [activities.length]);
+
+  return <section className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm border border-white/60">
+    <div className="flex items-start justify-between gap-4 pb-4 border-b border-surface-container">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className="w-9 h-9 rounded-xl bg-primary-fixed flex items-center justify-center text-primary shrink-0"><span className="material-symbols-outlined text-[19px]">history</span></div>
+        <div className="min-w-0"><span className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">Audit trail</span><h2 className="font-display font-semibold text-base text-on-surface mt-0.5">General Activity</h2><p className="text-[11px] text-on-surface-variant mt-0.5">Recent actions from administrators and users.</p></div>
+      </div>
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container text-[10px] font-semibold text-on-surface-variant whitespace-nowrap"><span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />Live records</span>
+    </div>
+    <div className="overflow-x-auto">
+      <div className="min-w-[620px]">
+        <div className="grid grid-cols-[150px_minmax(180px,1fr)_minmax(220px,1.4fr)_100px] gap-4 px-3 py-3 text-[9px] font-bold tracking-[0.14em] text-on-surface-variant uppercase"><span>Time</span><span>Actor</span><span>Activity</span><span>Status</span></div>
+        {loading ? <div className="px-3 py-8 text-center text-xs text-on-surface-variant">Loading activity records...</div> : visibleActivities.length ? visibleActivities.map((activity, index) => <div key={activity.id || activity.attempt_id || `${activity.created_at}-${index}`} className="grid grid-cols-[150px_minmax(180px,1fr)_minmax(220px,1.4fr)_100px] gap-4 items-center px-3 py-3.5 border-t border-surface-container-low text-[11px] hover:bg-surface-container-low/60 transition-colors"><time className="font-mono text-[10px] text-on-surface-variant">{formatActivityTime(activity.created_at || activity.attempt_time)}</time><div className="min-w-0"><strong className="block truncate font-semibold text-on-surface">{activity.user_name || activity.user_email || 'System'}</strong><small className="block truncate text-[10px] text-on-surface-variant mt-0.5">{activity.user_email || 'System activity'}</small></div><span className="truncate text-on-surface-variant">{activity.reason || 'Activity recorded'}</span><span className={`justify-self-start px-2 py-1 rounded-md text-[9px] font-bold tracking-wide ${activity.result && /FAILED|DENIED|ERROR/i.test(activity.result) ? 'bg-[#ffdad6] text-[#ba1a1a]' : 'bg-secondary-fixed text-on-secondary-fixed'}`}>{activity.result || 'ACTIVITY'}</span></div>) : <div className="px-3 py-8 text-center text-xs text-on-surface-variant">No activity has been recorded yet.</div>}
+      </div>
+    </div>
+    <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t border-surface-container text-[10px] text-on-surface-variant"><span>Showing {activities.length ? (currentPage - 1) * pageSize + 1 : 0}-{Math.min(currentPage * pageSize, activities.length)} of {activities.length} activities</span><div className="flex items-center gap-2"><button type="button" className="w-8 h-8 rounded-lg bg-surface-container text-on-surface-variant disabled:opacity-40" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={currentPage === 1} aria-label="Previous activity page"><span className="material-symbols-outlined text-[16px]">chevron_left</span></button><span className="font-mono">{currentPage} / {pageCount}</span><button type="button" className="w-8 h-8 rounded-lg bg-primary text-on-primary disabled:opacity-40" onClick={() => setPage((value) => Math.min(pageCount, value + 1))} disabled={currentPage === pageCount} aria-label="Next activity page"><span className="material-symbols-outlined text-[16px]">chevron_right</span></button></div></div>
+  </section>;
+}
+
+function formatActivityTime(value?: string) {
+  if (!value) return 'Not recorded';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Not recorded' : date.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}

@@ -222,6 +222,63 @@ http.route({
 });
 
 http.route({
+  path: "/iot/devices",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const devices = await ctx.runQuery(api.iot.listDevices, { controlToken: request.headers.get("x-backend-control-token") || "" });
+    return Response.json({ devices });
+  }),
+});
+
+http.route({
+  path: "/iot/devices",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const body = await request.json();
+    const deviceId = await ctx.runMutation(api.iot.createDevice, {
+      controlToken: request.headers.get("x-backend-control-token") || "",
+      deviceCode: String(body.device_code || "").trim(),
+      deviceName: String(body.device_name || "").trim(),
+      location: String(body.location || "Main residence").trim(),
+      deviceType: String(body.device_type || "ESP32 PIR").trim(),
+      isOnline: Boolean(body.is_online),
+    });
+    return Response.json({ device_id: deviceId }, { status: 201 });
+  }),
+});
+
+http.route({
+  path: "/iot/devices/:id",
+  method: "PATCH",
+  handler: httpAction(async (ctx, request) => {
+    const body = await request.json();
+    const device = await ctx.runMutation(api.iot.updateDevice, {
+      controlToken: request.headers.get("x-backend-control-token") || "",
+      id: body.id,
+      ...(body.device_name !== undefined ? { deviceName: String(body.device_name).trim() } : {}),
+      ...(body.location !== undefined ? { location: String(body.location).trim() } : {}),
+      ...(body.device_type !== undefined ? { deviceType: String(body.device_type).trim() } : {}),
+      ...(body.is_online !== undefined ? { isOnline: Boolean(body.is_online) } : {}),
+    });
+    return Response.json({ device });
+  }),
+});
+
+http.route({
+  path: "/iot/devices/:id",
+  method: "DELETE",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const id = decodeURIComponent(url.pathname.split("/").pop() || "");
+    const result = await ctx.runMutation(api.iot.deleteDevice, {
+      controlToken: request.headers.get("x-backend-control-token") || "",
+      id: id as any,
+    });
+    return Response.json(result);
+  }),
+});
+
+http.route({
   path: "/iot/mode",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
@@ -230,6 +287,7 @@ http.route({
       controlToken: request.headers.get("x-backend-control-token") || "",
       mode: body.mode,
       ...(typeof body.lockdown_active === "boolean" ? { lockdownActive: body.lockdown_active } : {}),
+      ...(typeof body.muted === "boolean" ? { soundMuted: body.muted } : {}),
     });
     return Response.json({ ok: true, ...result });
   }),

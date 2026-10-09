@@ -14,7 +14,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'home', label: 'Home', icon: 'shield_with_house' },
-  { id: 'monitor', label: 'Monitor', icon: 'radar' },
+  { id: 'monitor', label: 'Devices', icon: 'devices' },
   { id: 'voice', label: 'AI Chats', icon: 'graphic_eq' },
   { id: 'visitors', label: 'Users', icon: 'group' },
   { id: 'settings', label: 'Settings', icon: 'tune' },

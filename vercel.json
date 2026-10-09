@@ -37,7 +37,7 @@
           "destination": "/"
         },
         {
-          "source": "/client/(login|dashboard|settings)",
+          "source": "/client/(login|dashboard|logs|settings)",
           "destination": "/"
         },
         {
@@ -46,6 +46,10 @@
         },
         {
           "source": "/dashboard",
+          "destination": "/"
+        },
+        {
+          "source": "/logs",
           "destination": "/"
         },
         {

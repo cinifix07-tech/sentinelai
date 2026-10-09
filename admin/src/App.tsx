@@ -6,6 +6,7 @@ import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { HomeScreen } from './components/screens/HomeScreen';
 import { MonitorScreen } from './components/screens/MonitorScreen';
+import { DevicesScreen } from './components/screens/DevicesScreen';
 import { VoiceScreen } from './components/screens/VoiceScreen';
 import { VisitorsScreen } from './components/screens/VisitorsScreen';
 import { SettingsScreen } from './components/screens/SettingsScreen';
@@ -13,8 +14,13 @@ import { QuickPassValidationForm } from './components/QuickPassValidationForm';
 
 const tabs: AppTab[] = ['home', 'monitor', 'voice', 'visitors', 'settings'];
 const appBasePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+const routePrefix = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/') || appBasePath === '/admin' ? '/admin' : appBasePath;
+const LAST_ADMIN_TAB_KEY = 'sentinel-admin-last-tab';
 
 function appPath(pathname: string) {
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    return pathname.slice('/admin'.length) || '/';
+  }
   if (appBasePath && pathname.startsWith(appBasePath)) {
     return pathname.slice(appBasePath.length) || '/';
   }
@@ -27,7 +33,8 @@ function readTab(pathname: string): AppTab {
 }
 
 function hasSavedSession() {
-  return getSession()?.role === 'ADMIN';
+  const session = getSession();
+  return Boolean(session && String(session.role || '').toUpperCase() === 'ADMIN');
 }
 
 export default function App() {
@@ -38,7 +45,8 @@ export default function App() {
   const showLogin = !authenticated || appPath(pathname) === '/login';
 
   function setCurrentTab(tab: AppTab) {
-    const nextPath = `${appBasePath}/${tab}`;
+    const nextPath = `${routePrefix}/${tab}`;
+    window.localStorage.setItem(LAST_ADMIN_TAB_KEY, tab);
     if (window.location.pathname !== nextPath) {
       window.history.pushState({}, '', nextPath);
     }
@@ -46,23 +54,29 @@ export default function App() {
   }
 
   useEffect(() => {
-  function syncRoute() {
+    function syncRoute() {
       let path = appPath(window.location.pathname);
       if (!hasSavedSession()) {
         clearSession();
         setCurrentUser(null);
         path = '/login';
-      } else if (path !== '/login' && !tabs.includes(path.slice(1) as AppTab)) {
+      } else if (path === '/' || path === '' || path === '/login') {
+        const savedTab = window.localStorage.getItem(LAST_ADMIN_TAB_KEY) as AppTab | null;
+        path = savedTab && tabs.includes(savedTab) ? `/${savedTab}` : '/home';
+        setCurrentUser(getSession());
+      } else if (!tabs.includes(path.slice(1) as AppTab)) {
         path = '/home';
         setCurrentUser(getSession());
       } else {
         setCurrentUser(getSession());
       }
-      const nextPath = `${appBasePath}${path}`;
+      const nextPath = `${routePrefix}${path}`;
       if (nextPath !== window.location.pathname) {
         window.history.replaceState({}, '', nextPath);
       }
       setPathname(nextPath);
+      const activeTab = path.slice(1) as AppTab;
+      if (tabs.includes(activeTab)) window.localStorage.setItem(LAST_ADMIN_TAB_KEY, activeTab);
     }
     syncRoute();
     window.addEventListener('popstate', syncRoute);
@@ -80,7 +94,7 @@ export default function App() {
   function handleAuthenticated(session?: ReturnType<typeof getSession>) {
     setCurrentUser(session || getSession());
     setAuthenticated(true);
-    const nextPath = `${appBasePath}/home`;
+    const nextPath = `${routePrefix}/home`;
     window.history.replaceState({}, '', nextPath);
     setPathname(nextPath);
   }
@@ -98,8 +112,6 @@ export default function App() {
   const [currentTheme, setCurrentTheme] = useState<AppTheme>('daylight');
   const [showSecretAdvisoryModal, setShowSecretAdvisoryModal] = useState<boolean>(false);
   const [showQuickPassModal, setShowQuickPassModal] = useState<boolean>(false);
-  const [motionAlert, setMotionAlert] = useState<{ id: string; createdAt: string } | null>(null);
-  const [dismissedMotionId, setDismissedMotionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authenticated) return undefined;
@@ -119,33 +131,6 @@ export default function App() {
       window.clearInterval(timer);
     };
   }, [authenticated]);
-
-  useEffect(() => {
-    if (!authenticated) return undefined;
-    let active = true;
-    const pollMotionAlert = () => {
-      Promise.all([
-        apiGet('/iot/latest?device_code=esp32-porch-01'),
-        apiGet('/iot/activity?limit=1'),
-      ]).then(([latestResponse, activityResponse]) => {
-        if (!active) return;
-        const reading = latestResponse?.reading;
-        const event = Array.isArray(activityResponse?.events) ? activityResponse.events[0] : null;
-        const createdAt = event?.created_at || (reading?.motion_detected ? reading.created_at : '');
-        if (!createdAt) return;
-        const id = event?.id || `${reading?.device_id || 'esp32-porch-01'}-${createdAt}`;
-        if (id !== dismissedMotionId && id !== motionAlert?.id) {
-          setMotionAlert({ id, createdAt });
-        }
-      }).catch(() => undefined);
-    };
-    pollMotionAlert();
-    const timer = window.setInterval(pollMotionAlert, 2000);
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-    };
-  }, [authenticated, dismissedMotionId, motionAlert?.id]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -267,7 +252,7 @@ export default function App() {
         )}
 
         {currentTab === 'monitor' && (
-          <MonitorScreen onNavigate={(tab) => setCurrentTab(tab)} />
+          <DevicesScreen onNavigate={(tab) => setCurrentTab(tab)} />
         )}
 
         {currentTab === 'voice' && (
@@ -278,90 +263,8 @@ export default function App() {
           <VisitorsScreen onOpenQuickPassForm={() => setShowQuickPassModal(true)} />
         )}
 
-        {currentTab === 'settings' && <SettingsScreen onLogout={handleLogout} />}
+        {currentTab === 'settings' && <SettingsScreen onLogout={handleLogout} currentUser={currentUser} onProfileUpdated={(profile) => setCurrentUser((current) => ({ ...current, ...profile }))} />}
       </main>
-
-      {motionAlert && (currentTab === 'home' || currentTab === 'monitor') && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#071725]/55 p-4 backdrop-blur-md animate-in fade-in duration-200">
-          <div
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="motion-alert-title"
-            className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/70 bg-white/95 shadow-[0_30px_90px_rgba(4,25,42,0.32)]"
-          >
-            <div className="h-1.5 bg-gradient-to-r from-[#087f76] via-[#20c8b7] to-[#75eee0]" />
-            <button
-              type="button"
-              aria-label="Close motion alert"
-              onClick={() => {
-                setDismissedMotionId(motionAlert.id);
-                setMotionAlert(null);
-              }}
-              className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-xl text-[#50605f] transition-colors hover:bg-[#e8f0f0] hover:text-[#0b1c30]"
-            >
-              <span className="material-symbols-outlined text-[20px]">close</span>
-            </button>
-
-            <div className="p-6 sm:p-7">
-              <div className="flex items-start gap-4">
-                <div className="relative grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-[#d2faf4] text-[#007d73] shadow-inner">
-                  <span className="absolute inset-0 rounded-2xl border-2 border-[#38cfc0] animate-ping opacity-40" />
-                  <span className="material-symbols-outlined relative text-[34px]">motion_sensor_active</span>
-                </div>
-                <div className="min-w-0 pt-1">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff0ed] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#b3261e]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#d93025] animate-pulse" />
-                    Security Alert
-                  </span>
-                  <h2 id="motion-alert-title" className="mt-2 font-display text-2xl font-semibold tracking-tight text-[#0b1c30]">
-                    Motion detected
-                  </h2>
-                  <p className="mt-1 text-sm leading-5 text-[#5b6b69]">
-                    HC-SR501 detected movement at the front entrance.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-6 grid grid-cols-2 gap-2.5">
-                <div className="rounded-2xl bg-[#eef6f7] px-3.5 py-3">
-                  <span className="block text-[10px] font-bold uppercase tracking-wider text-[#71817f]">Sensor</span>
-                  <span className="mt-1 block text-sm font-semibold text-[#0b1c30]">ESP32 Porch Node</span>
-                </div>
-                <div className="rounded-2xl bg-[#eef6f7] px-3.5 py-3">
-                  <span className="block text-[10px] font-bold uppercase tracking-wider text-[#71817f]">Detected</span>
-                  <span className="mt-1 block text-sm font-semibold text-[#0b1c30]">
-                    {new Date(motionAlert.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-6 flex gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDismissedMotionId(motionAlert.id);
-                    setMotionAlert(null);
-                  }}
-                  className="flex-1 rounded-xl border border-[#d8e4e4] bg-white px-4 py-3 text-sm font-semibold text-[#36504e] transition-colors hover:bg-[#f1f7f7]"
-                >
-                  Dismiss
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDismissedMotionId(motionAlert.id);
-                    setMotionAlert(null);
-                    setCurrentTab('monitor');
-                  }}
-                  className="flex-1 rounded-xl bg-[#087f76] px-4 py-3 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(8,127,118,0.22)] transition-colors hover:bg-[#066b64]"
-                >
-                  Open Monitor
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Global Validated Quick Visitor Pass Modal */}
       <QuickPassValidationForm

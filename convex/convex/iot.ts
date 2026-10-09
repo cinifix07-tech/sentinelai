@@ -16,7 +16,7 @@ function requireBackendControlToken(token: string) {
 
 async function readState(ctx: any) {
   return (await ctx.db.query("iotSecurityState").withIndex("by_state", (q: any) => q.eq("stateId", 1)).unique())
-    ?? { stateId: 1, mode: "away" as const, lockdownActive: false, updatedAt: Date.now() };
+    ?? { stateId: 1, mode: "away" as const, lockdownActive: false, soundMuted: false, updatedAt: Date.now() };
 }
 
 export const recordReading = mutation({
@@ -102,11 +102,71 @@ export const mode = query({
   handler: async (ctx, args) => { requireDeviceToken(args.token); return { state: await readState(ctx) }; },
 });
 
+export const listDevices = query({
+  args: { controlToken: v.string() },
+  handler: async (ctx, args) => {
+    requireBackendControlToken(args.controlToken);
+    return await ctx.db.query("iotDevices").order("desc").collect();
+  },
+});
+
+export const createDevice = mutation({
+  args: {
+    controlToken: v.string(), deviceCode: v.string(), deviceName: v.string(),
+    location: v.string(), deviceType: v.string(), isOnline: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    requireBackendControlToken(args.controlToken);
+    const existing = await ctx.db.query("iotDevices").withIndex("by_code", (q) => q.eq("deviceCode", args.deviceCode)).unique();
+    if (existing) throw new Error("A device with that code already exists.");
+    const now = Date.now();
+    return await ctx.db.insert("iotDevices", {
+      deviceCode: args.deviceCode,
+      deviceName: args.deviceName,
+      location: args.location,
+      deviceType: args.deviceType,
+      isOnline: args.isOnline ?? false,
+      lastSeen: args.isOnline ? now : 0,
+    });
+  },
+});
+
+export const updateDevice = mutation({
+  args: {
+    controlToken: v.string(), id: v.id("iotDevices"), deviceName: v.optional(v.string()),
+    location: v.optional(v.string()), deviceType: v.optional(v.string()), isOnline: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    requireBackendControlToken(args.controlToken);
+    const current = await ctx.db.get(args.id);
+    if (!current) throw new Error("Device not found.");
+    const patch: Record<string, unknown> = {};
+    if (args.deviceName !== undefined) patch.deviceName = args.deviceName;
+    if (args.location !== undefined) patch.location = args.location;
+    if (args.deviceType !== undefined) patch.deviceType = args.deviceType;
+    if (args.isOnline !== undefined) { patch.isOnline = args.isOnline; if (args.isOnline) patch.lastSeen = Date.now(); }
+    await ctx.db.patch(args.id, patch);
+    return await ctx.db.get(args.id);
+  },
+});
+
+export const deleteDevice = mutation({
+  args: { controlToken: v.string(), id: v.id("iotDevices") },
+  handler: async (ctx, args) => {
+    requireBackendControlToken(args.controlToken);
+    const current = await ctx.db.get(args.id);
+    if (!current) throw new Error("Device not found.");
+    await ctx.db.delete(args.id);
+    return { deleted: true, deviceCode: current.deviceCode };
+  },
+});
+
 export const setMode = mutation({
   args: {
     controlToken: v.string(),
     mode: v.union(v.literal("away"), v.literal("home"), v.literal("disarm")),
     lockdownActive: v.optional(v.boolean()),
+    soundMuted: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     requireBackendControlToken(args.controlToken);
@@ -116,6 +176,7 @@ export const setMode = mutation({
       stateId: 1,
       mode: args.mode,
       lockdownActive,
+      soundMuted: args.soundMuted ?? current.soundMuted ?? false,
       updatedAt: Date.now(),
     };
     const existing = await ctx.db.query("iotSecurityState").withIndex("by_state", (q) => q.eq("stateId", 1)).unique();

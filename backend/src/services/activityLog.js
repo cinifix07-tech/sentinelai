@@ -2,7 +2,7 @@ const { listRecords, insertRecord } = require('./convexData');
 const socket = require('../socket');
 
 const TABLE_NAME = 'access_attempts';
-const RETAINED_ACTIVITY_LIMIT = 15;
+const RETAINED_ACTIVITY_LIMIT = 1000;
 
 function convexActivityRow(row) {
   return { ...row, id: row.attempt_id || row._legacy_id, created_at: row.created_at || row.attempt_time };

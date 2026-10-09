@@ -21,13 +21,13 @@ async function convexTelemetry(path) {
   return body;
 }
 
-async function convexSetMode(mode, lockdownActive) {
+async function convexSetMode(mode, lockdownActive, muted) {
   const controlToken = process.env.CONVEX_CONTROL_TOKEN;
   if (!controlToken) return null;
   const response = await fetch(`${CONVEX_SITE_URL}/iot/mode`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-backend-control-token': controlToken },
-    body: JSON.stringify({ mode, lockdown_active: lockdownActive }),
+    body: JSON.stringify({ mode, lockdown_active: lockdownActive, muted }),
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) throw Object.assign(new Error(body.error || `Convex mode update failed (${response.status})`), { status: response.status });
@@ -265,15 +265,34 @@ async function convexIngest(req, res, next) {
 async function convexMode(req, res, next) {
   try {
     const body = await convexTelemetry('/iot/mode');
-    res.json({ ok: true, state: { mode: body.state?.mode || 'away', lockdown_active: Boolean(body.state?.lockdownActive ?? body.state?.lockdown_active), updated_at: body.state?.updatedAt } });
+    res.json({ ok: true, state: { mode: body.state?.mode || 'away', lockdown_active: Boolean(body.state?.lockdownActive ?? body.state?.lockdown_active), muted: Boolean(body.state?.soundMuted ?? body.state?.muted), updated_at: body.state?.updatedAt } });
   } catch (error) { next(error); }
 }
 
 async function convexUpdateMode(req, res, next) {
   try {
-    const result = await convexSetMode(String(req.body?.mode || '').toLowerCase(), req.body?.lockdown_active);
-    const state = { mode: result?.mode || 'away', lockdown_active: Boolean(result?.lockdownActive ?? result?.lockdown_active), updated_at: result?.updatedAt };
+    const result = await convexSetMode(String(req.body?.mode || '').toLowerCase(), req.body?.lockdown_active, req.body?.muted);
+    const state = { mode: result?.mode || 'away', lockdown_active: Boolean(result?.lockdownActive ?? result?.lockdown_active), muted: Boolean(result?.soundMuted ?? result?.muted), updated_at: result?.updatedAt };
     socket.emit('iot:mode', state);
+    res.json({ ok: true, state });
+  } catch (error) { next(error); }
+}
+
+async function clientControl(req, res, next) {
+  try {
+    const hasAwayRequest = req.body?.mode !== undefined;
+    const hasMuteRequest = typeof req.body?.muted === 'boolean';
+    if (!hasAwayRequest && !hasMuteRequest) return res.status(400).json({ error: 'Provide mode or muted.' });
+    if (hasAwayRequest && !['away', 'disarm'].includes(String(req.body.mode).toLowerCase())) return res.status(403).json({ error: 'Client controls support Armed away or passive mode.' });
+
+    const currentResponse = await convexTelemetry('/iot/mode');
+    const current = currentResponse.state || {};
+    const result = await convexSetMode(
+      hasAwayRequest ? 'away' : (current.mode || 'away'),
+      Boolean(current.lockdownActive ?? current.lockdown_active),
+      hasMuteRequest ? req.body.muted : Boolean(current.soundMuted ?? current.muted),
+    );
+    const state = { mode: result?.mode || 'away', lockdown_active: Boolean(result?.lockdownActive ?? result?.lockdown_active), muted: Boolean(result?.soundMuted ?? result?.muted), updated_at: result?.updatedAt };
     res.json({ ok: true, state });
   } catch (error) { next(error); }
 }
@@ -283,4 +302,4 @@ async function convexTestMotion(req, res, next) {
   return convexIngest(req, res, next);
 }
 
-module.exports = { ingest: convexIngest, latest, activity, mode: convexMode, updateMode: convexUpdateMode, testMotion: convexTestMotion };
+module.exports = { ingest: convexIngest, latest, activity, mode: convexMode, updateMode: convexUpdateMode, clientControl, testMotion: convexTestMotion };

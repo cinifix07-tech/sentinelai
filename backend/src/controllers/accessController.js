@@ -3,7 +3,9 @@ const { listActivities, recordActivity } = require('../services/activityLog');
 
 async function listAttempts(req, res, next) {
   try {
-    res.json(await listActivities({ userId: req.user?.user_id, userEmail: req.user?.email }));
+    // This route is admin-protected, so the audit trail must include every
+    // administrator and client account instead of filtering to the viewer.
+    res.json(await listActivities());
   } catch (error) { next(error); }
 }
 

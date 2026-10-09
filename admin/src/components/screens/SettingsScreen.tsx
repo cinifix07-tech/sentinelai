@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { apiGet } from '../../api.js';
+import { apiGet, apiPut, getSession, saveSession } from '../../api.js';
 import { PremiumLoader } from '../PremiumUI';
 
 interface AccessAttempt {
@@ -48,7 +48,14 @@ function activityIcon(result?: string) {
   return 'verified_user';
 }
 
-export const SettingsScreen: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
+interface AdminProfile {
+  full_name?: string;
+  email?: string;
+  phone?: string;
+  residence?: string;
+}
+
+export const SettingsScreen: React.FC<{ onLogout: () => void; currentUser?: AdminProfile | null; onProfileUpdated?: (profile: AdminProfile) => void }> = ({ onLogout, currentUser, onProfileUpdated }) => {
   const [otaChecking, setOtaChecking] = useState(false);
   const [otaStatus, setOtaStatus] = useState<string | null>(null);
   const [runningDiagnostic, setRunningDiagnostic] = useState(false);
@@ -66,6 +73,11 @@ export const SettingsScreen: React.FC<{ onLogout: () => void }> = ({ onLogout })
   const [accessResultFilter, setAccessResultFilter] = useState('ALL');
   const [accessLogPage, setAccessLogPage] = useState(1);
   const [accessLogPageSize, setAccessLogPageSize] = useState(5);
+  const [profile, setProfile] = useState<AdminProfile>({ full_name: currentUser?.full_name || '', email: currentUser?.email || '', phone: '', residence: '' });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileMessage, setProfileMessage] = useState('');
+  const [profileError, setProfileError] = useState('');
 
   async function loadAccessAttempts() {
     setAccessLogLoading(true);
@@ -82,6 +94,40 @@ export const SettingsScreen: React.FC<{ onLogout: () => void }> = ({ onLogout })
   useEffect(() => {
     loadAccessAttempts();
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    apiGet('/users')
+      .then((users) => {
+        if (!active) return;
+        const sessionEmail = String(getSession()?.email || currentUser?.email || '').toLowerCase();
+        const account = (Array.isArray(users) ? users : []).find((user) => String(user.email || '').toLowerCase() === sessionEmail);
+        if (account) setProfile({ full_name: account.full_name || account.name || '', email: account.email || sessionEmail, phone: account.phone || '', residence: account.residence || '' });
+      })
+      .catch(() => undefined)
+      .finally(() => { if (active) setProfileLoading(false); });
+    return () => { active = false; };
+  }, [currentUser?.email]);
+
+  async function saveProfile(event: React.FormEvent) {
+    event.preventDefault();
+    setProfileSaving(true); setProfileMessage(''); setProfileError('');
+    try {
+      const updated = await apiPut('/users/me', profile);
+      const session = getSession();
+      const mergedSession = session ? { ...session, full_name: updated.full_name || profile.full_name, email: updated.email || profile.email } : null;
+      if (mergedSession) {
+        const remembered = Boolean(localStorage.getItem('sentinel-session'));
+        saveSession(mergedSession, remembered);
+        onProfileUpdated?.(mergedSession);
+      }
+      setProfile((current) => ({ ...current, ...updated }));
+      setProfileMessage('Profile updated in Convex successfully.');
+      loadAccessAttempts();
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : 'Unable to update profile.');
+    } finally { setProfileSaving(false); }
+  }
 
   useEffect(() => {
     setAccessLogPage(1);
@@ -146,6 +192,23 @@ export const SettingsScreen: React.FC<{ onLogout: () => void }> = ({ onLogout })
             Online &amp; Armed
           </span>
         </div>
+      </section>
+
+      <section className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm border border-surface-container/60">
+        <div className="flex items-start justify-between gap-4 pb-4 border-b border-surface-container">
+          <div className="flex items-center gap-3 min-w-0"><div className="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center text-primary"><span className="material-symbols-outlined text-[22px]">manage_accounts</span></div><div><span className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">Convex account</span><h2 className="font-display font-bold text-base text-on-surface mt-0.5">Profile update</h2><p className="text-[12px] text-on-surface-variant mt-0.5">Changes are saved to the signed-in administrator account.</p></div></div>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-fixed text-primary text-[10px] font-bold whitespace-nowrap"><span className="w-1.5 h-1.5 rounded-full bg-primary" />Convex synced</span>
+        </div>
+        <form onSubmit={saveProfile} className="pt-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label className="grid gap-1.5 text-xs font-semibold text-on-surface-variant">Full name<input required value={profile.full_name || ''} onChange={(event) => setProfile({ ...profile, full_name: event.target.value })} disabled={profileLoading} className="h-11 rounded-xl bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary/30" /></label>
+            <label className="grid gap-1.5 text-xs font-semibold text-on-surface-variant">Email<input required type="email" value={profile.email || ''} onChange={(event) => setProfile({ ...profile, email: event.target.value })} disabled={profileLoading} className="h-11 rounded-xl bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary/30" /></label>
+            <label className="grid gap-1.5 text-xs font-semibold text-on-surface-variant">Phone<input value={profile.phone || ''} onChange={(event) => setProfile({ ...profile, phone: event.target.value })} disabled={profileLoading} className="h-11 rounded-xl bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary/30" /></label>
+            <label className="grid gap-1.5 text-xs font-semibold text-on-surface-variant">Residence<input required value={profile.residence || ''} onChange={(event) => setProfile({ ...profile, residence: event.target.value })} disabled={profileLoading} className="h-11 rounded-xl bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary/30" /></label>
+          </div>
+          {(profileMessage || profileError) && <p className={`mt-4 rounded-xl px-3 py-2.5 text-xs ${profileError ? 'bg-error-container text-on-error-container' : 'bg-primary-fixed text-on-primary-fixed-variant'}`}>{profileError || profileMessage}</p>}
+          <div className="flex justify-end mt-5"><button type="submit" disabled={profileSaving || profileLoading} className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-primary text-on-primary text-xs font-bold shadow-sm hover:bg-primary-container disabled:opacity-50"><span className="material-symbols-outlined text-[17px]">save</span>{profileSaving ? 'Saving profile...' : 'Save profile'}</button></div>
+        </form>
       </section>
 
       <section className="bg-surface-container-lowest rounded-xl shadow-sm border border-surface-container/60 overflow-hidden">

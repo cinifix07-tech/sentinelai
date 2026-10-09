@@ -104,6 +104,7 @@ export default defineSchema({
     stateId: v.number(),
     mode: v.union(v.literal("away"), v.literal("home"), v.literal("disarm")),
     lockdownActive: v.boolean(),
+    soundMuted: v.optional(v.boolean()),
     updatedAt: v.number(),
   }).index("by_state", ["stateId"]),
 });
