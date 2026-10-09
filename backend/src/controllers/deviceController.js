@@ -1,16 +1,14 @@
-const { query } = require('../config/database');
 const crud = require('./crudController');
 const socket = require('../socket');
+const { findRecord, updateRecord } = require('../services/convexData');
 
 async function heartbeat(req, res, next) {
   try {
-    const result = await query(
-      'UPDATE devices SET is_online = true, last_seen = CURRENT_TIMESTAMP WHERE device_code = $1 RETURNING *',
-      [req.params.device_code]
-    );
-    if (!result.rows[0]) return res.status(404).json({ error: 'Device not found' });
-    socket.emit('device:heartbeat', result.rows[0]);
-    res.json(result.rows[0]);
+    const device = await findRecord('devices', req.params.device_code, 'device_code');
+    if (!device) return res.status(404).json({ error: 'Device not found' });
+    const row = await updateRecord('devices', device._legacy_id || req.params.device_code, { is_online: true, last_seen: new Date().toISOString() }, 'device_code');
+    socket.emit('device:heartbeat', row);
+    res.json(row);
   } catch (error) {
     next(error);
   }

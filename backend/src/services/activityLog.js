@@ -1,8 +1,50 @@
-const { query } = require('../config/database');
+const { listRecords, insertRecord } = require('./convexData');
 const socket = require('../socket');
 
 const TABLE_NAME = 'access_attempts';
 const RETAINED_ACTIVITY_LIMIT = 15;
+
+function convexActivityRow(row) {
+  return { ...row, id: row.attempt_id || row._legacy_id, created_at: row.created_at || row.attempt_time };
+}
+
+async function listActivitiesConvex({ userId, userEmail } = {}) {
+  const rows = await listRecords('access_attempts', { order: 'attempt_time', limit: RETAINED_ACTIVITY_LIMIT });
+  return rows
+    .filter((row) => !userId && !userEmail || (userId && String(row.user_id || '') === String(userId)) || (userEmail && String(row.user_email || '').toLowerCase() === String(userEmail).toLowerCase()))
+    .map(convexActivityRow);
+}
+
+async function pruneActivityLogConvex() {
+  return { total: 0, deleted: 0 };
+}
+
+async function recordActivityConvex({ req, actor, result = 'ACTIVITY', reason = 'Activity recorded', session_id, device_id } = {}) {
+  try {
+    const resolved = actor || req?.user || {};
+    const id = `activity:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+    const now = new Date().toISOString();
+    const row = {
+      attempt_id: id,
+      session_id: session_id || null,
+      device_id: device_id || null,
+      result: String(result),
+      reason: String(reason),
+      attempt_time: now,
+      created_at: now,
+      user_id: resolved.user_id || resolved.id || resolved.email || null,
+      user_name: resolved.full_name || resolved.name || null,
+      user_email: resolved.email || null,
+    };
+    const inserted = await insertRecord('access_attempts', id, row);
+    const normalized = convexActivityRow(inserted);
+    socket.emit('activity:new', normalized);
+    return normalized;
+  } catch (error) {
+    console.warn('Convex activity log skipped:', error.message);
+    return null;
+  }
+}
 let cachedColumns = null;
 
 function quoteIdentifier(value) {
@@ -210,7 +252,7 @@ async function recordActivity({
 
 module.exports = {
   RETAINED_ACTIVITY_LIMIT,
-  listActivities,
-  pruneActivityLog,
-  recordActivity,
+  listActivities: listActivitiesConvex,
+  pruneActivityLog: pruneActivityLogConvex,
+  recordActivity: recordActivityConvex,
 };

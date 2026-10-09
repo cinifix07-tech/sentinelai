@@ -1,4 +1,4 @@
-const { query } = require('../config/database');
+const { listRecords } = require('../services/convexData');
 const { listActivities } = require('../services/activityLog');
 
 async function clientTelemetry() {
@@ -45,19 +45,19 @@ async function dashboard(req, res, next) {
     }
 
     const [devices, readings, sessions, interactions, alerts, activities] = await Promise.all([
-      query('SELECT * FROM devices ORDER BY last_seen DESC NULLS LAST LIMIT 20'),
-      query('SELECT DISTINCT ON (device_id) *, recorded_at AS created_at FROM sensor_readings ORDER BY device_id, recorded_at DESC NULLS LAST'),
-      query('SELECT *, session_status AS status, final_result AS authorization_result, started_at AS created_at FROM security_sessions ORDER BY started_at DESC NULLS LAST LIMIT 20'),
-      query('SELECT *, processed_time AS created_at FROM voice_interactions ORDER BY processed_time DESC NULLS LAST LIMIT 20'),
-      query('SELECT *, alert_level AS severity FROM alerts ORDER BY created_at DESC NULLS LAST LIMIT 20'),
+      listRecords('devices', { order: 'last_seen', limit: 20 }),
+      listRecords('sensor_readings', { order: 'recorded_at', limit: 100 }),
+      listRecords('security_sessions', { order: 'started_at', limit: 20 }),
+      listRecords('voice_interactions', { order: 'processed_time', limit: 20 }),
+      listRecords('alerts', { order: 'created_at', limit: 20 }),
       listActivities({ userId: req.user?.user_id, userEmail: req.user?.email }),
     ]);
     res.json({
-      devices: devices.rows,
-      latestReadings: readings.rows,
-      sessions: sessions.rows,
-      voiceInteractions: interactions.rows,
-      alerts: alerts.rows,
+      devices,
+      latestReadings: readings,
+      sessions,
+      voiceInteractions: interactions,
+      alerts,
       activities,
     });
   } catch (error) {

@@ -1,13 +1,14 @@
-const { query } = require('../config/database');
 const crud = require('./crudController');
 const socket = require('../socket');
+const { findRecord, updateRecord } = require('../services/convexData');
 
 async function markRead(req, res, next) {
   try {
-    const result = await query('UPDATE alerts SET is_read = true WHERE alert_id = $1 RETURNING *', [req.params.id]);
-    if (!result.rows[0]) return res.status(404).json({ error: 'Alert not found' });
-    socket.emit('alert:read', result.rows[0]);
-    res.json(result.rows[0]);
+    const alert = await findRecord('alerts', req.params.id, 'alert_id');
+    if (!alert) return res.status(404).json({ error: 'Alert not found' });
+    const row = await updateRecord('alerts', alert._legacy_id || req.params.id, { is_read: true }, 'alert_id');
+    socket.emit('alert:read', row);
+    res.json(row);
   } catch (error) { next(error); }
 }
 

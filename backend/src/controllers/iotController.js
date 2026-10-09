@@ -1,4 +1,3 @@
-const { query } = require('../config/database');
 const socket = require('../socket');
 
 const CONVEX_SITE_URL = process.env.CONVEX_SITE_URL || 'https://elated-eel-973.convex.site';
@@ -247,4 +246,40 @@ async function testMotion(req, res, next) {
   }
 }
 
-module.exports = { ingest, latest, activity, mode, updateMode, testMotion };
+async function convexIngest(req, res, next) {
+  try {
+    requireDeviceKey(req);
+    const response = await fetch(`${CONVEX_SITE_URL}/iot/ingest`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-device-key': req.get('x-device-key') || req.body?.api_key || '' },
+      body: JSON.stringify(req.body || {}),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) return res.status(response.status).json(body);
+    socket.emit('sensor:reading', body.reading);
+    if (body.event) socket.emit('security:event', body.event);
+    res.status(201).json(body);
+  } catch (error) { next(error); }
+}
+
+async function convexMode(req, res, next) {
+  try {
+    const body = await convexTelemetry('/iot/mode');
+    res.json({ ok: true, state: body.state });
+  } catch (error) { next(error); }
+}
+
+async function convexUpdateMode(req, res, next) {
+  try {
+    const result = await convexSetMode(String(req.body?.mode || '').toLowerCase(), req.body?.lockdown_active);
+    socket.emit('iot:mode', result);
+    res.json({ ok: true, state: result });
+  } catch (error) { next(error); }
+}
+
+async function convexTestMotion(req, res, next) {
+  req.body = { ...(req.body || {}), motion_detected: true };
+  return convexIngest(req, res, next);
+}
+
+module.exports = { ingest: convexIngest, latest, activity, mode: convexMode, updateMode: convexUpdateMode, testMotion: convexTestMotion };

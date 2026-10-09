@@ -1,5 +1,5 @@
-const { query } = require('../config/database');
 const { randomUUID } = require('crypto');
+const { listRecords, insertRecord, updateRecord, deleteRecord } = require('../services/convexData');
 
 let schemaPromise;
 
@@ -402,4 +402,172 @@ async function sendVisitorMessage(req, res, next) {
   }
 }
 
-module.exports = { listPeople, heartbeat, listMessages, sendMessage, markMessagesRead, listNotifications, createGroup, listGroups, deleteGroup, listGroupMessages, sendGroupMessage, visitorIntake, listVisitorMessages, sendVisitorMessage };
+async function convexRows(table, order = 'created_at') {
+  return listRecords(table, { order, limit: 1000 });
+}
+
+function rowId(row, field) {
+  return String(row._legacy_id || row[field] || row.id || '');
+}
+
+async function convexPeople(req, res, next) {
+  try {
+    const filter = String(req.query.filter || 'all').toLowerCase();
+    let people = await convexRows('users', 'full_name');
+    people = people.filter((user) => user.is_active !== false && (filter === 'all' || (filter === 'admin' && String(user.role).toUpperCase() === 'ADMIN') || (filter === 'residence' && String(user.role).toUpperCase() === 'USER')));
+    const messages = await convexRows('communication_messages', 'created_at');
+    res.json(people.map((user) => {
+      const id = String(user.user_id || user._legacy_id || user.email);
+      const unread = messages.filter((message) => String(message.recipient_user_id) === id && !message.read_at).length;
+      return { user_id: id, full_name: user.full_name || user.email, email: user.email, role: user.role || 'USER', residence: user.residence || 'Main Residence', is_active: user.is_active !== false, last_seen_at: user.last_seen_at || null, online: Boolean(user.last_seen_at && Date.now() - Date.parse(user.last_seen_at) < 120000), unread_count: unread };
+    }));
+  } catch (error) { next(error); }
+}
+
+async function convexHeartbeat(req, res, next) {
+  try {
+    const id = String(req.user.user_id || req.user.email);
+    const user = await (async () => {
+      const users = await convexRows('users', 'full_name');
+      return users.find((item) => String(item.user_id || item.email) === id || String(item.email).toLowerCase() === id.toLowerCase());
+    })();
+    if (user) await updateRecord('users', rowId(user, 'user_id'), { last_seen_at: new Date().toISOString() }, 'user_id');
+    res.json({ ok: true, last_seen_at: new Date().toISOString() });
+  } catch (error) { next(error); }
+}
+
+async function convexListMessages(req, res, next) {
+  try {
+    const current = String(req.user.user_id || req.user.email);
+    const participant = String(req.params.userId || '');
+    const messages = await convexRows('communication_messages', 'created_at');
+    res.json(messages.filter((message) => (String(message.sender_user_id) === current && String(message.recipient_user_id) === participant) || (String(message.sender_user_id) === participant && String(message.recipient_user_id) === current)).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))).slice(-300));
+  } catch (error) { next(error); }
+}
+
+async function convexSendMessage(req, res, next) {
+  try {
+    const recipient = String(req.body?.recipient_user_id || req.body?.recipientId || '').trim();
+    const message = String(req.body?.message || '').trim();
+    if (!recipient || !message) return res.status(400).json({ error: 'Recipient and message are required.' });
+    const id = `message:${randomUUID()}`;
+    const row = { message_id: id, sender_user_id: String(req.user.user_id || req.user.email), recipient_user_id: recipient, message, created_at: new Date().toISOString(), read_at: null, attachment_data: req.body?.attachment_data || null, attachment_name: req.body?.attachment_name || null, attachment_type: req.body?.attachment_type || null, attachment_size: req.body?.attachment_size || null };
+    res.status(201).json(await insertRecord('communication_messages', id, row));
+  } catch (error) { next(error); }
+}
+
+async function convexMarkMessagesRead(req, res, next) {
+  try {
+    const current = String(req.user.user_id || req.user.email);
+    const participant = String(req.params.userId || '');
+    const messages = await convexRows('communication_messages', 'created_at');
+    await Promise.all(messages.filter((message) => String(message.sender_user_id) === participant && String(message.recipient_user_id) === current && !message.read_at).map((message) => updateRecord('communication_messages', rowId(message, 'message_id'), { read_at: new Date().toISOString() }, 'message_id')));
+    res.json({ ok: true });
+  } catch (error) { next(error); }
+}
+
+async function convexNotifications(req, res, next) {
+  try {
+    const current = String(req.user.user_id || req.user.email);
+    const users = await convexRows('users', 'full_name');
+    const messages = await convexRows('communication_messages', 'created_at');
+    res.json(messages.filter((message) => String(message.recipient_user_id) === current).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).slice(0, 50).map((message) => ({ ...message, sender_name: users.find((user) => String(user.user_id || user.email) === String(message.sender_user_id))?.full_name || 'User' })));
+  } catch (error) { next(error); }
+}
+
+async function convexCreateGroup(req, res, next) {
+  try {
+    const name = String(req.body?.group_name || req.body?.name || '').trim();
+    const members = Array.isArray(req.body?.member_ids) ? req.body.member_ids.map(String) : [];
+    if (!name || members.length < 1) return res.status(400).json({ error: 'Group name and at least one member are required.' });
+    const id = `group:${randomUUID()}`;
+    const group = { group_id: id, group_name: name, created_by: String(req.user.user_id || req.user.email), created_at: new Date().toISOString() };
+    await insertRecord('communication_groups', id, group);
+    await Promise.all([...new Set([group.created_by, ...members])].map((userId) => insertRecord('communication_group_members', `${id}:${userId}`, { group_id: id, user_id: userId, joined_at: group.created_at })));
+    res.status(201).json({ ...group, member_ids: [...new Set([group.created_by, ...members])] });
+  } catch (error) { next(error); }
+}
+
+async function convexListGroups(req, res, next) {
+  try {
+    const current = String(req.user.user_id || req.user.email);
+    const groups = await convexRows('communication_groups', 'created_at');
+    const members = await convexRows('communication_group_members', 'joined_at');
+    res.json(groups.filter((group) => members.some((member) => String(member.group_id) === String(group.group_id) && String(member.user_id) === current)).map((group) => ({ ...group, member_count: members.filter((member) => String(member.group_id) === String(group.group_id)).length, members: members.filter((member) => String(member.group_id) === String(group.group_id)) })));
+  } catch (error) { next(error); }
+}
+
+async function convexDeleteGroup(req, res, next) {
+  try {
+    const groupId = String(req.params.groupId || '');
+    const groups = await convexRows('communication_groups', 'created_at');
+    const group = groups.find((item) => String(item.group_id) === groupId);
+    if (!group) return res.status(404).json({ error: 'Group not found.' });
+    await deleteRecord('communication_groups', rowId(group, 'group_id'), 'group_id');
+    const members = await convexRows('communication_group_members', 'joined_at');
+    await Promise.all(members.filter((member) => String(member.group_id) === groupId).map((member) => deleteRecord('communication_group_members', rowId(member, 'id'), 'id')));
+    res.json(group);
+  } catch (error) { next(error); }
+}
+
+async function convexListGroupMessages(req, res, next) {
+  try {
+    const groupId = String(req.params.groupId || '');
+    const messages = await convexRows('communication_group_messages', 'created_at');
+    res.json(messages.filter((message) => String(message.group_id) === groupId).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))).slice(-300));
+  } catch (error) { next(error); }
+}
+
+async function convexSendGroupMessage(req, res, next) {
+  try {
+    const groupId = String(req.body?.group_id || '').trim();
+    const message = String(req.body?.message || '').trim();
+    if (!groupId || !message) return res.status(400).json({ error: 'Group and message are required.' });
+    const id = `group-message:${randomUUID()}`;
+    res.status(201).json(await insertRecord('communication_group_messages', id, { message_id: id, group_id: groupId, sender_user_id: String(req.user.user_id || req.user.email), message, created_at: new Date().toISOString() }));
+  } catch (error) { next(error); }
+}
+
+async function convexVisitorIntake(req, res, next) {
+  try {
+    const fullName = String(req.body?.full_name || req.body?.name || '').trim();
+    const purpose = String(req.body?.purpose || '').trim();
+    if (!fullName || !purpose) return res.status(400).json({ error: 'Name and purpose are required.' });
+    const admins = (await convexRows('users', 'full_name')).filter((user) => String(user.role).toUpperCase() === 'ADMIN' && user.is_active !== false);
+    const admin = admins[0];
+    if (!admin) return res.status(503).json({ error: 'No administrator is available right now.' });
+    const visitorId = `visitor:${randomUUID()}`;
+    const createdAt = new Date().toISOString();
+    await insertRecord('communication_visitors', visitorId, { visitor_id: visitorId, full_name: fullName, purpose, admin_user_id: String(admin.user_id || admin.email), created_at: createdAt, last_seen_at: createdAt });
+    const messageId = `message:${randomUUID()}`;
+    const message = `New visitor intake\nName: ${fullName}\nPurpose: ${purpose}`;
+    const saved = await insertRecord('communication_messages', messageId, { message_id: messageId, sender_user_id: visitorId, recipient_user_id: String(admin.user_id || admin.email), message, created_at: createdAt, read_at: null });
+    res.status(201).json({ visitor_id: visitorId, message: saved });
+  } catch (error) { next(error); }
+}
+
+async function convexVisitorMessages(req, res, next) {
+  try {
+    const visitorId = String(req.params.visitorId || '');
+    const visitors = await convexRows('communication_visitors', 'created_at');
+    const visitor = visitors.find((item) => String(item.visitor_id) === visitorId);
+    if (!visitor) return res.status(404).json({ error: 'Visitor conversation not found.' });
+    const messages = await convexRows('communication_messages', 'created_at');
+    res.json(messages.filter((item) => (String(item.sender_user_id) === visitorId && String(item.recipient_user_id) === String(visitor.admin_user_id)) || (String(item.sender_user_id) === String(visitor.admin_user_id) && String(item.recipient_user_id) === visitorId)).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))));
+  } catch (error) { next(error); }
+}
+
+async function convexSendVisitorMessage(req, res, next) {
+  try {
+    const visitorId = String(req.body?.visitor_id || '').trim();
+    const message = String(req.body?.message || '').trim();
+    if (!visitorId || !message) return res.status(400).json({ error: 'Visitor and message are required.' });
+    const visitors = await convexRows('communication_visitors', 'created_at');
+    const visitor = visitors.find((item) => String(item.visitor_id) === visitorId);
+    if (!visitor) return res.status(404).json({ error: 'Visitor conversation not found.' });
+    const id = `message:${randomUUID()}`;
+    res.status(201).json(await insertRecord('communication_messages', id, { message_id: id, sender_user_id: visitorId, recipient_user_id: String(visitor.admin_user_id), message, created_at: new Date().toISOString(), read_at: null }));
+  } catch (error) { next(error); }
+}
+
+module.exports = { listPeople: convexPeople, heartbeat: convexHeartbeat, listMessages: convexListMessages, sendMessage: convexSendMessage, markMessagesRead: convexMarkMessagesRead, listNotifications: convexNotifications, createGroup: convexCreateGroup, listGroups: convexListGroups, deleteGroup: convexDeleteGroup, listGroupMessages: convexListGroupMessages, sendGroupMessage: convexSendGroupMessage, visitorIntake: convexVisitorIntake, listVisitorMessages: convexVisitorMessages, sendVisitorMessage: convexSendVisitorMessage };

@@ -1,5 +1,5 @@
-const { query } = require('../config/database');
 const table = require('../models/table');
+const { listRecords } = require('../services/convexData');
 const socket = require('../socket');
 
 async function createReading(req, res, next) {
@@ -15,12 +15,10 @@ async function createReading(req, res, next) {
 
 async function latest(req, res, next) {
   try {
-    const result = await query(
-      'SELECT *, recorded_at AS created_at FROM sensor_readings WHERE device_id = $1 ORDER BY recorded_at DESC NULLS LAST LIMIT 1',
-      [req.params.device_id]
-    );
-    if (!result.rows[0]) return res.status(404).json({ error: 'No readings found for device' });
-    res.json(result.rows[0]);
+    const rows = await listRecords('sensor_readings', { order: 'recorded_at', limit: 1000 });
+    const row = rows.find((item) => String(item.device_id) === String(req.params.device_id) || String(item.device_code) === String(req.params.device_id));
+    if (!row) return res.status(404).json({ error: 'No readings found for device' });
+    res.json({ ...row, created_at: row.recorded_at || row.created_at });
   } catch (error) { next(error); }
 }
 
@@ -29,37 +27,20 @@ async function listReadings(req, res, next) {
     const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
     const pageSize = 5;
     const deviceId = String(req.query.device_id || '').trim();
-    const params = [];
-    const filters = [];
-
-    if (deviceId) {
-      params.push(deviceId);
-      filters.push(`(d.device_code = $${params.length} OR sr.device_id::text = $${params.length})`);
-    }
-
-    const whereSql = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
-    const countResult = await query(`
-      SELECT COUNT(*)::int AS total
-        FROM sensor_readings sr
-        LEFT JOIN devices d ON d.device_id = sr.device_id
-        ${whereSql}
-    `, params);
-    const total = Number(countResult.rows[0]?.total || 0);
+    let rows = await listRecords('sensor_readings', { order: 'recorded_at', limit: 1000 });
+    if (deviceId) rows = rows.filter((row) => String(row.device_id) === deviceId || String(row.device_code) === deviceId);
+    const total = rows.length;
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
     const currentPage = Math.min(page, totalPages);
     const offset = (currentPage - 1) * pageSize;
 
-    const result = await query(`
-      SELECT sr.*, sr.recorded_at AS created_at, d.device_code, d.device_name, d.location
-        FROM sensor_readings sr
-        LEFT JOIN devices d ON d.device_id = sr.device_id
-        ${whereSql}
-       ORDER BY sr.recorded_at DESC NULLS LAST
-       LIMIT ${pageSize} OFFSET $${params.length + 1}
-    `, [...params, offset]);
+    const pageRows = rows.slice(offset, offset + pageSize).map((row) => ({
+      ...row,
+      created_at: row.recorded_at || row.created_at,
+    }));
 
     return res.json({
-      readings: result.rows,
+      readings: pageRows,
       page: currentPage,
       page_size: pageSize,
       total,

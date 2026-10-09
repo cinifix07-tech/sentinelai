@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "seed:admin": "node src/services/seedUsers.js"
+    "seed:admin": "node src/services/seedUsers.js",
+    "bootstrap:convex-admin": "node scripts/bootstrapConvexAdmin.js",
+    "import:sql-convex": "node scripts/importSqlDumpToConvex.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
