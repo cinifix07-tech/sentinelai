@@ -188,6 +188,17 @@ export const importLegacyBatch = internalMutation({
         const existingAccount = await ctx.db.query("userAccounts").withIndex("by_legacy_id", (q) => q.eq("legacyUserId", account.legacyUserId)).unique();
         if (existingAccount) await ctx.db.patch(existingAccount._id, account);
         else await ctx.db.insert("userAccounts", account);
+        const authUser = {
+          name: account.fullName,
+          email: account.email,
+          ...(account.phone ? { phone: account.phone } : {}),
+          legacyUserId: account.legacyUserId,
+          role: account.role,
+          isActive: account.isActive,
+        };
+        const existingAuthUser = await ctx.db.query("users").withIndex("email", (q) => q.eq("email", account.email)).unique();
+        if (existingAuthUser) await ctx.db.patch(existingAuthUser._id, authUser);
+        else await ctx.db.insert("users", authUser);
       }
       if (args.tableName === "authorized_profiles") {
         const profile = {
