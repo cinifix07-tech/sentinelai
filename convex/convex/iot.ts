@@ -64,20 +64,29 @@ export const activity = query({
   handler: async (ctx, args) => {
     requireDeviceToken(args.token);
     const limit = Math.min(Math.max(args.limit ?? 100, 1), 5000);
-    const readings = await ctx.db.query("iotSensorReadings").withIndex("by_device_time").order("desc").take(limit);
-    return readings.filter((reading) => reading.motionDetected).map((reading) => ({
-      id: `sensor-reading-${reading._id}`,
-      title: "PIR motion detected",
-      detail: `${reading.deviceName} sensor reading saved`,
-      time: new Date(reading.recordedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      icon: "radar",
-      tone: "info",
-      created_at: new Date(reading.recordedAt).toISOString(),
-      location: reading.location,
-      device_type: reading.deviceType,
-      audio_detected: reading.audioDetected,
-      audio_level: reading.audioLevel,
-      motion_detected: reading.motionDetected,
+    const events = await ctx.db.query("iotSecurityEvents").withIndex("by_time").order("desc").take(limit);
+    return await Promise.all(events.map(async (event) => {
+      const device = await ctx.db.query("iotDevices").withIndex("by_code", (q) => q.eq("deviceCode", event.deviceCode)).unique();
+      const reading = await ctx.db.query("iotSensorReadings")
+        .withIndex("by_device_time", (q) => q.eq("deviceCode", event.deviceCode).eq("recordedAt", event.occurredAt))
+        .unique();
+      return {
+        id: `security-event-${event._id}`,
+        title: "PIR motion detected",
+        detail: event.description,
+        time: new Date(event.occurredAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        icon: "radar",
+        tone: event.eventStatus === "passive" ? "muted" : "info",
+        created_at: new Date(event.occurredAt).toISOString(),
+        location: device?.location || "Front entrance",
+        device_type: device?.deviceType || "ESP32 PIR",
+        audio_detected: reading?.audioDetected || false,
+        audio_level: reading?.audioLevel || 0,
+        motion_detected: true,
+        event_type: event.eventType,
+        event_status: event.eventStatus,
+        confidence: event.confidence,
+      };
     }));
   },
 });

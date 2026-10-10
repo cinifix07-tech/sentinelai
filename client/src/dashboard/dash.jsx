@@ -217,8 +217,11 @@ function dateValue(event) {
 
 function chartPoints(events, range) {
   const buckets = Array.from({ length: range === 'today' ? 24 : 14 }, (_, index) => ({ value: 0, event: null, index }))
+  const now = Date.now()
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const start = range === 'today' ? todayStart.getTime() : now - 7 * 24 * 60 * 60 * 1000
   const span = range === 'today' ? 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000
-  const start = Date.now() - span
   events.forEach(event => {
     const position = Math.floor(((dateValue(event) - start) / span) * buckets.length)
     if (position >= 0 && position < buckets.length) {

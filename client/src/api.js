@@ -56,6 +56,7 @@ export async function loginToBackend(email, password) {
 export async function apiGet(path) {
   const session = getSession();
   const response = await fetch(`${API_URL}${path}`, {
+    cache: 'no-store',
     headers: { Authorization: `Bearer ${session?.token || ''}` },
   });
   const data = await response.json().catch(() => ({}));
