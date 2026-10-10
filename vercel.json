@@ -59,6 +59,17 @@
       ]
     }
   },
+  "headers": [
+    {
+      "source": "/admin/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, max-age=0"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/admin/(.*)",

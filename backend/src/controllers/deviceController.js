@@ -24,11 +24,11 @@ async function create(req, res, next) {
 }
 
 async function update(req, res, next) {
-  try { const body = await convexDeviceRequest(`/iot/devices/${encodeURIComponent(String(req.params.id))}`, 'PATCH', { id: req.params.id, ...req.body }); const device = body.device ? mapDevice(body.device) : body; socket.emit('device:updated', device); res.json(device); } catch (error) { next(error); }
+  try { const body = await convexDeviceRequest('/iot/devices', 'PATCH', { id: req.params.id, ...req.body }); const device = body.device ? mapDevice(body.device) : body; socket.emit('device:updated', device); res.json(device); } catch (error) { next(error); }
 }
 
 async function remove(req, res, next) {
-  try { const body = await convexDeviceRequest(`/iot/devices/${encodeURIComponent(String(req.params.id))}`, 'DELETE'); socket.emit('device:deleted', body); res.json(body); } catch (error) { next(error); }
+  try { const body = await convexDeviceRequest(`/iot/devices?id=${encodeURIComponent(String(req.params.id))}`, 'DELETE'); socket.emit('device:deleted', body); res.json(body); } catch (error) { next(error); }
 }
 
 async function heartbeat(req, res, next) {

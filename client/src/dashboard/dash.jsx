@@ -50,12 +50,14 @@ export default function Dashboard({ profile, notify }) {
   const onlineDevices = data.devices.filter((device) => device.is_online)
   const latestReading = data.latestReadings[0]
   const passiveMode = data.securityState.mode === 'disarm' || data.securityState.muted
-  const latestMotion = data.latestReadings.some((reading) => reading.motion_detected)
-  const latestMotionReading = data.latestReadings.find((reading) => reading.motion_detected) || latestReading
-  const latestMotionKey = latestMotionReading?.created_at || latestMotionReading?.recorded_at || ''
+  const latestMotionEvent = data.sensorEvents[0]
+  const latestMotion = Boolean(latestMotionEvent || data.latestReadings.some((reading) => reading.motion_detected))
+  const latestMotionReading = latestMotionEvent || data.latestReadings.find((reading) => reading.motion_detected) || latestReading
+  const latestMotionKey = latestMotionReading?.id || latestMotionReading?.created_at || latestMotionReading?.recorded_at || ''
 
   useEffect(() => {
-    if (latestMotion && latestMotionReading) setMotionAlert(latestMotionReading)
+    if (!latestMotionReading || !latestMotionKey) return
+    setMotionAlert((current) => current?.id === latestMotionKey ? current : latestMotionReading)
   }, [latestMotionKey])
 
   const updateClientControl = async (payload, message) => {
@@ -177,7 +179,7 @@ function MotionDetectionModal({ reading, securityState, onClose }) {
     <section className="client-motion-modal" role="alertdialog" aria-modal="true" aria-labelledby="motion-alert-title">
       <div className="client-motion-topline"><span className="motion-alert-pulse"><i /></span><span>LIVE PERIMETER ALERT</span><button type="button" className="client-motion-close" onClick={onClose} aria-label="Close motion alert"><Icon name="close" size={19} /></button></div>
       <div className="client-motion-mark"><Icon name="pulse" size={31} /></div>
-      <span className="eyebrow lime">HC-SR501 / MOTION EVENT</span>
+      <span className="eyebrow lime">{reading.device_type || 'HC-SR501'} / MOTION EVENT</span>
       <h2 id="motion-alert-title">Motion detected at your residence</h2>
       <p className="client-motion-summary">Your connected perimeter sensor reported movement. Review the event details below and take action if you do not recognize this activity.</p>
       <div className="client-motion-details"><div><small>LOCATION</small><strong>{reading.location || 'Front entrance'}</strong></div><div><small>DETECTED</small><strong>{formatTime(reading.created_at || reading.recorded_at)}</strong></div><div><small>AUDIO LEVEL</small><strong>{reading.audio_level ?? 0}</strong></div></div>

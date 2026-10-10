@@ -1,6 +1,6 @@
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || '/api');
 const FALLBACK_API_URL = API_URL.startsWith('/')
-  ? 'http://localhost:4000/api'
+  ? (import.meta.env.DEV ? 'http://localhost:4000/api' : 'https://www.sentinelai.click/api')
   : API_URL.includes('localhost')
     ? API_URL.replace('localhost', '127.0.0.1')
     : '';
@@ -9,7 +9,8 @@ const CLIENT_URL = import.meta.env.VITE_CLIENT_URL || '';
 const SESSION_KEY = 'sentinel-session';
 
 export function getSession() {
-  const raw = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
+  let raw = null;
+  try { raw = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY); } catch { raw = null; }
   if (!raw) return null;
   try { return JSON.parse(raw); }
   catch { return null; }
@@ -17,13 +18,18 @@ export function getSession() {
 
 export function saveSession(session, remember) {
   clearSession();
-  const storage = remember ? localStorage : sessionStorage;
-  storage.setItem(SESSION_KEY, JSON.stringify(session));
+  const serialized = JSON.stringify(session);
+  try {
+    // Admin sessions must survive a refresh in both local preview and Vercel.
+    localStorage.setItem(SESSION_KEY, serialized);
+  } catch {
+    sessionStorage.setItem(SESSION_KEY, serialized);
+  }
 }
 
 export function clearSession() {
-  localStorage.removeItem(SESSION_KEY);
-  sessionStorage.removeItem(SESSION_KEY);
+  try { localStorage.removeItem(SESSION_KEY); } catch { /* storage may be blocked */ }
+  try { sessionStorage.removeItem(SESSION_KEY); } catch { /* storage may be blocked */ }
 }
 
 export async function logoutFromBackend() {
@@ -251,7 +257,7 @@ async function requestApi(path, options = {}) {
       lastError = error;
     }
   }
-  throw new Error(`Cannot reach backend API. Make sure the backend is running on http://localhost:4000. ${lastError?.message || ''}`.trim());
+      throw new Error(`Cannot reach the production backend API at ${API_URL}. ${lastError?.message || ''}`.trim());
 }
 
 export function roleHome(role) {

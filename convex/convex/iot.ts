@@ -65,7 +65,20 @@ export const activity = query({
     requireDeviceToken(args.token);
     const limit = Math.min(Math.max(args.limit ?? 100, 1), 5000);
     const readings = await ctx.db.query("iotSensorReadings").withIndex("by_device_time").order("desc").take(limit);
-    return readings.filter((reading) => reading.motionDetected).map((reading) => ({ id: `sensor-reading-${reading._id}`, title: "PIR motion detected", detail: `${reading.deviceName} sensor reading saved`, time: new Date(reading.recordedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), icon: "radar", tone: "info", created_at: new Date(reading.recordedAt).toISOString(), location: reading.location }));
+    return readings.filter((reading) => reading.motionDetected).map((reading) => ({
+      id: `sensor-reading-${reading._id}`,
+      title: "PIR motion detected",
+      detail: `${reading.deviceName} sensor reading saved`,
+      time: new Date(reading.recordedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      icon: "radar",
+      tone: "info",
+      created_at: new Date(reading.recordedAt).toISOString(),
+      location: reading.location,
+      device_type: reading.deviceType,
+      audio_detected: reading.audioDetected,
+      audio_level: reading.audioLevel,
+      motion_detected: reading.motionDetected,
+    }));
   },
 });
 

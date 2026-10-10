@@ -323,6 +323,42 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({ onUnlockDoor }) => {
     }
   }
 
+  useEffect(() => {
+    if (!selectedPerson) return undefined;
+    let active = true;
+    const refreshConversation = async () => {
+      try {
+        const history = await apiGet(`/communicate/messages/${encodeURIComponent(String(selectedPerson.user_id))}`);
+        if (active) setCommunicationMessages(history);
+      } catch {
+        // Keep the current conversation visible if a background refresh briefly fails.
+      }
+    };
+    const refreshTimer = window.setInterval(refreshConversation, 4000);
+    return () => {
+      active = false;
+      window.clearInterval(refreshTimer);
+    };
+  }, [selectedPerson]);
+
+  useEffect(() => {
+    if (!selectedGroup) return undefined;
+    let active = true;
+    const refreshConversation = async () => {
+      try {
+        const history = await apiGet(`/communicate/groups/${encodeURIComponent(String(selectedGroup.group_id))}/messages`);
+        if (active) setGroupMessages(history);
+      } catch {
+        // Keep the current conversation visible if a background refresh briefly fails.
+      }
+    };
+    const refreshTimer = window.setInterval(refreshConversation, 4000);
+    return () => {
+      active = false;
+      window.clearInterval(refreshTimer);
+    };
+  }, [selectedGroup]);
+
   async function sendGroupCommunication(event: React.FormEvent) {
     event.preventDefault();
     const message = groupDraft.trim();
@@ -482,7 +518,7 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({ onUnlockDoor }) => {
 
       <div className="communication-chat-grid grid grid-cols-1 lg:grid-cols-12 gap-5">
         <div className="communication-chat-column lg:col-span-12 flex flex-col gap-4">
-          <div className="messenger-workspace">
+          <div className={`messenger-workspace ${selectedPerson || selectedGroup ? 'has-active-conversation' : ''}`}>
             <aside className="messenger-sidebar" aria-label="Conversation list">
               <div className="messenger-sidebar-header">
                 <div><span className="communication-eyebrow">SECURE INBOX</span><h2>Conversations</h2></div>

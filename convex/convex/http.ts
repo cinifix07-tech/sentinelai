@@ -248,13 +248,13 @@ http.route({
 });
 
 http.route({
-  path: "/iot/devices/:id",
+  path: "/iot/devices",
   method: "PATCH",
   handler: httpAction(async (ctx, request) => {
     const body = await request.json();
     const device = await ctx.runMutation(api.iot.updateDevice, {
       controlToken: request.headers.get("x-backend-control-token") || "",
-      id: body.id,
+      id: String(body.id || "") as any,
       ...(body.device_name !== undefined ? { deviceName: String(body.device_name).trim() } : {}),
       ...(body.location !== undefined ? { location: String(body.location).trim() } : {}),
       ...(body.device_type !== undefined ? { deviceType: String(body.device_type).trim() } : {}),
@@ -265,11 +265,11 @@ http.route({
 });
 
 http.route({
-  path: "/iot/devices/:id",
+  path: "/iot/devices",
   method: "DELETE",
   handler: httpAction(async (ctx, request) => {
     const url = new URL(request.url);
-    const id = decodeURIComponent(url.pathname.split("/").pop() || "");
+    const id = url.searchParams.get("id") || "";
     const result = await ctx.runMutation(api.iot.deleteDevice, {
       controlToken: request.headers.get("x-backend-control-token") || "",
       id: id as any,

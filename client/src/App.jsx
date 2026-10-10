@@ -45,6 +45,7 @@ function ClientCommunication({ profile }) {
   const [draft, setDraft] = useState('')
   const [attachment, setAttachment] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [unreadCount, setUnreadCount] = useState(0)
@@ -102,6 +103,42 @@ function ClientCommunication({ profile }) {
   }, [open, selectedGroup, selectedAssistant])
 
   useEffect(() => {
+    if (!open || !selectedAdmin || selectedGroup || selectedAssistant) return undefined
+    let active = true
+    const refreshConversation = async () => {
+      try {
+        const history = await apiGet(`/communicate/messages/${encodeURIComponent(String(selectedAdmin.user_id))}`)
+        if (active) setMessages(history)
+      } catch {
+        // Keep the current conversation visible if a background refresh briefly fails.
+      }
+    }
+    const refreshTimer = window.setInterval(refreshConversation, 4000)
+    return () => {
+      active = false
+      window.clearInterval(refreshTimer)
+    }
+  }, [open, selectedAdmin, selectedGroup, selectedAssistant])
+
+  useEffect(() => {
+    if (!open || !selectedGroup || selectedAssistant) return undefined
+    let active = true
+    const refreshConversation = async () => {
+      try {
+        const history = await apiGet(`/communicate/groups/${encodeURIComponent(String(selectedGroup.group_id))}/messages`)
+        if (active) setMessages(history)
+      } catch {
+        // Keep the current conversation visible if a background refresh briefly fails.
+      }
+    }
+    const refreshTimer = window.setInterval(refreshConversation, 4000)
+    return () => {
+      active = false
+      window.clearInterval(refreshTimer)
+    }
+  }, [open, selectedGroup, selectedAssistant])
+
+  useEffect(() => {
     if (selectedAdmin) {
       setSelectedGroup(null)
       setSelectedAssistant(false)
@@ -114,6 +151,26 @@ function ClientCommunication({ profile }) {
       setAttachment(null)
     }
   }, [selectedGroup])
+
+  async function refreshCurrentChat() {
+    if ((!selectedAdmin && !selectedGroup) || selectedAssistant || refreshing) return
+    setRefreshing(true)
+    setError('')
+    try {
+      const history = selectedGroup
+        ? await apiGet(`/communicate/groups/${encodeURIComponent(String(selectedGroup.group_id))}/messages`)
+        : await apiGet(`/communicate/messages/${encodeURIComponent(String(selectedAdmin.user_id))}`)
+      setMessages(history)
+      if (selectedAdmin) {
+        await apiPut(`/communicate/messages/${encodeURIComponent(String(selectedAdmin.user_id))}/read`)
+        setUnreadCount((count) => Math.max(0, count - Number(selectedAdmin.unread_count || 0)))
+      }
+    } catch (requestError) {
+      setError(requestError.message || 'Unable to refresh the conversation.')
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   async function sendMessage(event) {
     event.preventDefault()
@@ -227,7 +284,7 @@ function ClientCommunication({ profile }) {
         <header className="client-chat-header">
           <div className="client-chat-mark"><Icon name={selectedAssistant ? 'bot' : 'chat'} size={22} /></div>
           <div><span>{selectedAssistant ? 'AI ASSISTANT' : 'SECURE COMMUNICATION'}</span><h2 id="client-chat-title">{selectedAssistant ? 'Sentinel AI Assistant' : selectedGroup ? selectedGroup.group_name : selectedAdmin ? selectedAdmin.full_name || selectedAdmin.email : 'Connect with an admin'}</h2><p>{selectedAssistant ? 'Ask about alerts, devices, motion, and next actions.' : selectedGroup ? 'Shared messages with your approved group members.' : selectedAdmin ? 'Private secure channel with your administrator.' : 'Private messages saved to your Sentinel workspace.'}</p></div>
-          <button type="button" className="client-chat-close" onClick={() => setOpen(false)} aria-label="Close admin chat">×</button>
+          <div className="client-chat-header-actions"><button type="button" className="client-chat-close" onClick={() => setOpen(false)} aria-label="Close admin chat">×</button><button type="button" className="client-chat-refresh" onClick={refreshCurrentChat} disabled={(!selectedAdmin && !selectedGroup) || selectedAssistant || refreshing} aria-label="Refresh conversation" title="Refresh conversation"><Icon name="refresh" size={16} /></button></div>
         </header>
         {isChatting && <button type="button" className="client-chat-back" onClick={resetChat}><Icon name="arrow" size={16} />Back to all conversations</button>}
         <div className="client-ai-assistant-option">

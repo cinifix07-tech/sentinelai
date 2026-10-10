@@ -174,7 +174,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <button type="button" className="ai-floating-launcher" onClick={() => onOpenAiAssistant?.()} aria-label="Open AI assistant chat">
+      <button type="button" className={`ai-floating-launcher ${currentTab === 'voice' ? 'ai-floating-launcher-hidden' : ''}`} onClick={() => onOpenAiAssistant?.()} aria-label="Open AI assistant chat">
         <span className="ai-floating-launcher-pulse" />
         <span className="material-symbols-outlined">smart_toy</span>
         <span className="ai-floating-launcher-label">AI Assistant</span>

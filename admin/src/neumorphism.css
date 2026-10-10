@@ -477,6 +477,7 @@
 .neo-admin:not(.neo-login) .communication-thread { background: linear-gradient(180deg, var(--neo-low), var(--neo-face)); }
 .neo-admin:not(.neo-login) .communication-bubble span { color: var(--neo-ink); background: var(--neo-high); box-shadow: var(--neo-small); }
 .neo-admin:not(.neo-login) .communication-bubble.outgoing span { color: #fff; background: linear-gradient(145deg, #08786e, #005b54); }
+.neo-admin:not(.neo-login) .communication-bubble > span > span { color: inherit; background: transparent; box-shadow: none; }
 .neo-admin:not(.neo-login) .communication-composer { border-color: var(--neo-edge); background: var(--neo-face); }
 .neo-admin:not(.neo-login) .communication-composer input { color: var(--neo-ink); background: var(--neo-base); border-color: var(--neo-edge); box-shadow: var(--neo-inset); }
 .neo-admin:not(.neo-login) .communication-composer button { color: #fff; background: linear-gradient(145deg, #08786e, #005b54); }
@@ -512,6 +513,7 @@
 .neo-admin:not(.neo-login) .ai-floating-launcher .material-symbols-outlined { font-size: 25px; }
 .neo-admin:not(.neo-login) .ai-floating-launcher-label { font-size: 11px; font-weight: 800; }
 .neo-admin:not(.neo-login) .ai-floating-launcher-pulse { width: 8px; height: 8px; border-radius: 50%; background: #94f3e8; box-shadow: 0 0 0 5px #94f3e822; }
+.neo-admin:not(.neo-login) .ai-floating-launcher-hidden { display: none; }
 .neo-admin:not(.neo-login) .ai-chat-modal-backdrop { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 20px; background: color-mix(in srgb, var(--neo-shade) 62%, transparent); backdrop-filter: blur(11px); }
 .neo-admin:not(.neo-login) .ai-chat-modal { width: min(100%, 760px); max-height: min(720px, calc(100vh - 40px)); color: var(--neo-ink); background: var(--neo-face); border-color: var(--neo-edge); box-shadow: 0 30px 90px color-mix(in srgb, var(--neo-shade) 65%, transparent), inset 1px 1px 0 var(--neo-light); }
 .neo-admin:not(.neo-login) .ai-chat-modal-close { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--neo-edge); border-radius: 9px; color: var(--neo-muted); background: var(--neo-high); cursor: pointer; }
